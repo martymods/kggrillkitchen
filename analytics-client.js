@@ -1,45 +1,18 @@
 /*
- * Simple analytics client for KG Grill Kitchen
- *
- * This lightweight module sends anonymous page views and events back to the
- * backend. The backend can store these in a database or forward them to
- * third‑party analytics platforms. All events are sent using the Fetch API
- * without blocking the UI. Events include a timestamp, the current page
- * location and arbitrary metadata.
+ * Simple analytics client (API base aware)
  */
-(function() {
-  /**
-   * Determine API base from global injection. Defaults to empty string for relative paths.
-   */
-  const API_BASE = (typeof window !== 'undefined' && window.KG_API_BASE) ? window.KG_API_BASE : '';
-  /**
-   * Send a payload to the analytics endpoint. Errors are silently
-   * swallowed to avoid interrupting the customer experience.
-   * @param {object} payload
-   */
-  function send(payload) {
-    try {
-      fetch(`${API_BASE}/analytics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payload,
-          timestamp: new Date().toISOString(),
-          path: window.location.pathname,
-        }),
+(function(){
+  function getMeta(name){ const el=document.querySelector(`meta[name="${name}"]`); return el?el.content.trim():''; }
+  const API_BASE = getMeta('kg-api-base') || '';
+  function send(payload){
+    try{
+      fetch((API_BASE||'') + '/analytics', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ ...payload, timestamp:new Date().toISOString(), path:location.pathname })
       });
-    } catch (err) {
-      console.warn('Analytics error', err);
-    }
+    }catch(e){ /* no-op */ }
   }
-  /**
-   * Public track function. Pass an event name and optional data object.
-   */
-  function track(event, data = {}) {
-    send({ event, data });
-  }
-  // Track a page view when the script loads
+  function track(event, data={}){ send({ event, data }); }
   track('page_view');
-  // Expose to global
   window.KGAnalytics = { track };
 })();
