@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>KG Grill Kitchen | Order Online</title>
-  <!-- Favicon (optional). Uncomment and provide your own favicon at /favicon.png if desired -->
-  <!-- <link rel="icon" href="favicon.png"> -->
-  <!-- Leaflet styles for the map. Use correct SRI values and specify crossorigin to avoid integrity errors -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossorigin="anonymous">
-  <!-- Local site styles -->
-  <link rel="stylesheet" href="style.css">
+
+  <!-- Inline SVG favicon (no 404s) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%232e8b57'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50' fill='white' font-family='Arial'%3EKG%3C/text%3E%3C/svg%3E" />
+
+  <!-- CONFIG: set your API base and Stripe publishable key here -->
+  <!-- Example: https://delcotechdivision.com/kg-api (or your Render service domain) -->
+  <meta name="kg-api-base" content="">
+  <!-- Put your Stripe PK here (publishable; safe to expose). Example: pk_live_xxx or pk_test_xxx -->
+  <meta name="kg-stripe-pk" content="">
+
+  <!-- Leaflet CSS (no integrity so it won't be blocked) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Page header with restaurant name, order type selector and cart button -->
   <header class="header">
-    <h1 class="site-title">KG Grill Kitchen</h1>
+    <h1 class="site-title">KG&nbsp;Grill&nbsp;Kitchen</h1>
     <div class="order-type" role="group" aria-label="Select fulfilment method">
       <span>Select Order Type:</span>
       <label><input type="radio" name="orderType" value="pickup" checked>Pickup</label>
@@ -25,27 +32,24 @@
     <button id="viewCartBtn" class="view-cart-btn" aria-label="View your cart">Cart (0)</button>
   </header>
 
-  <!-- Main content container -->
   <main class="container">
-    <!-- Mains menu section -->
     <section class="menu-section" id="main-menu">
       <h2>Mains</h2>
-      <div class="menu-grid" id="mains-container"><!-- items injected via JS --></div>
+      <div class="menu-grid" id="mains-container"></div>
     </section>
-    <!-- Sides menu section -->
+
     <section class="menu-section" id="side-menu">
       <h2>Sides</h2>
-      <div class="menu-grid" id="sides-container"><!-- items injected via JS --></div>
+      <div class="menu-grid" id="sides-container"></div>
     </section>
   </main>
 
-  <!-- Sliding cart panel -->
   <aside class="cart-panel" id="cartPanel" aria-hidden="true">
     <div class="cart-header">
       <h2>Your Order</h2>
       <button id="closeCart" aria-label="Close cart">×</button>
     </div>
-    <div class="cart-items" id="cartItems"><!-- cart items injected via JS --></div>
+    <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer">
       <div class="totals-row">
         <span>Subtotal</span><span id="cartSubtotal">$0.00</span>
@@ -63,48 +67,41 @@
     </div>
   </aside>
 
-  <!-- Checkout modal overlay -->
   <div class="overlay" id="checkoutOverlay" aria-hidden="true">
     <form id="checkoutForm" class="checkout-form" novalidate>
       <h3>Checkout</h3>
       <p id="checkoutError" class="checkout-error" role="alert" hidden></p>
-      <!-- Delivery fields (hidden until delivery selected) -->
+
       <div id="deliveryFields" class="delivery-fields" hidden>
         <label for="deliveryAddress">Delivery address</label>
         <textarea id="deliveryAddress" name="address" rows="2" placeholder="Use your current location"></textarea>
         <div id="mapContainer" class="delivery-map" aria-label="Delivery map" hidden></div>
         <p id="distanceSummary" class="distance-summary"></p>
       </div>
+
       <label for="customerName">Name</label>
       <input type="text" id="customerName" name="name" autocomplete="name" required>
+
       <label for="customerPhone">Phone number</label>
       <input type="tel" id="customerPhone" name="phone" autocomplete="tel" required>
-      <!-- Payment UI -->
+
       <fieldset id="paymentFieldset" class="payment-fieldset">
         <legend>Payment</legend>
         <div id="payment-request-button" hidden></div>
         <div id="card-element" class="card-element"></div>
         <div id="payment-message" class="payment-message" role="alert" hidden></div>
       </fieldset>
+
       <button type="submit" id="placeOrderButton" class="place-order-btn">Pay &amp; place order</button>
     </form>
   </div>
 
-  <!-- External libraries -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-          crossorigin="anonymous"></script>
+  <!-- Leaflet JS (no integrity so it won't be blocked) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Stripe -->
   <script src="https://js.stripe.com/v3"></script>
-  <!-- Inject runtime configuration. Replace values with your actual backend domain and Stripe publishable key. -->
-  <script>
-    // Backend base URL for API requests (no trailing slash). Example: 'https://www.delcotechdivision.com'
-    window.KG_API_BASE = ''; // set this at runtime or leave empty for relative paths
-    // Stripe publishable key. Do NOT expose your secret key. Example: 'pk_live_12345abc'
-    window.KG_STRIPE_PK = '';
-  </script>
-  <!-- Analytics placeholder (sends page views and events to backend) -->
+  <!-- Analytics + App -->
   <script src="analytics-client.js"></script>
-  <!-- Main application logic -->
   <script src="script.js"></script>
 </body>
 </html>
