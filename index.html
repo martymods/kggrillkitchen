@@ -95,7 +95,8 @@
       <!-- Payment UI -->
       <fieldset id="paymentFieldset" class="payment-fieldset">
         <legend>Payment</legend>
-        <div id="payment-request-button" hidden></div>
+        <!-- Mount point for Apple Pay / Google Pay button. Hidden by default and shown when available. -->
+        <div id="payment-request-button" style="display:none;margin-bottom:10px;"></div>
         <div id="card-element" class="card-element"></div>
         <div id="payment-message" class="payment-message" role="alert" hidden></div>
       </fieldset>
