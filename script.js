@@ -217,6 +217,24 @@ let paymentRequest = null;
 let paymentRequestButton = null;
 let currentClientSecret = null;
 
+/**
+ * Compute the monetary breakdown for the current cart and fulfilment selection.
+ * Returns an object with subtotal, fees, deliveryFee, tip and grand total.
+ */
+function computeTotals() {
+  // Subtotal is sum of unit price × quantity for all cart items
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Service & tax: simple 10% of subtotal for this demo
+  const fees = subtotal * 0.1;
+  // Delivery fee: use precomputed deliveryFee when order type is delivery
+  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const delivery = orderType === 'delivery' ? (deliveryFee || 0) : 0;
+  // Tip amount: if pickup, tip is always 0
+  const tip = orderType === 'delivery' ? (currentTipAmount || 0) : 0;
+  const total = subtotal + fees + delivery + tip;
+  return { subtotal, fees, deliveryFee: delivery, tip, grand: total };
+}
+
 /* --------------------------------------------------------------------------
  * API base helper
  *
@@ -818,29 +836,41 @@ async function initStripe() {
 async function createPaymentIntent() {
   // Avoid duplicate creation if we already have a client secret
   if (currentClientSecret) return currentClientSecret;
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  const name = document.getElementById('customerName').value;
-  const phone = document.getElementById('customerPhone').value;
-  const address = document.getElementById('deliveryAddress').value;
-  // Build payload with items and extras
-  const items = cart.map(item => ({
-    id: item.id,
-    name: item.name,
-    unitPrice: Math.round(item.price * 100),
-    quantity: item.quantity,
-    sauce: item.sauce || null,
-    freeSide: item.freeSide || null,
+
+  // Order/customer fields that already exist in your DOM
+  const fulfilment = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const name = (document.getElementById('customerName')?.value || '').trim();
+  const phone = (document.getElementById('customerPhone')?.value || '').trim();
+  const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
+
+  // Build totals once (grand must be >= $0.50 => 50 cents)
+  const totals = computeTotals();
+
+  // Flatten cart for metadata (prices in cents)
+  const simplifiedCartArray = cart.map(i => ({
+    name: i.name,
+    unitPrice: Math.round(i.price * 100),
+    quantity: i.quantity,
+    // keep these if present so you see them in Telegram/metadata
+    sauce: i.sauce || null,
+    freeSide: i.freeSide || null,
   }));
+
+  // Payload that matches your /kg/create-payment-intent route
   const payload = {
-    items,
-    currency: 'usd',
-    orderType,
+    amount: Math.round(totals.grand * 100),          // cents
+    tip: Math.round((totals.tip || 0) * 100),        // cents
+    fulfilment,                                       // "pickup" | "delivery"
     name,
     phone,
-    address,
-    deliveryCents: Math.round(deliveryFee * 100),
-    tipCents: Math.round((currentTipAmount || 0) * 100),
+    address: {
+      line1,                                         // you only collect a single line
+      city: '',                                      // left blank (no fields on the page)
+      postal_code: ''                                // left blank (no fields on the page)
+    },
+    cart: simplifiedCartArray
   };
+
   try {
     const resp = await fetch(api('/create-payment-intent'), {
       method: 'POST',
@@ -849,7 +879,7 @@ async function createPaymentIntent() {
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err.message || 'Failed to create payment intent');
+      throw new Error(err.error || err.message || 'Failed to create payment intent');
     }
     const data = await resp.json();
     currentClientSecret = data.clientSecret;
@@ -879,55 +909,63 @@ function clearPaymentMessage() {
 }
 
 /**
- * Called when a payment is successful. Notifies the backend, sends
- * Telegram notification and resets the cart.
+ * Called when a payment is successful. Notifies the backend/Telegram and resets the cart.
  */
 async function handleOrderSuccess(paymentIntentId) {
-  // Build order summary
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  const name = document.getElementById('customerName').value;
-  const phone = document.getElementById('customerPhone').value;
-  const address = document.getElementById('deliveryAddress').value;
-  const order = {
-    orderType,
+  const fulfilment = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const name = (document.getElementById('customerName')?.value || '').trim();
+  const phone = (document.getElementById('customerPhone')?.value || '').trim();
+  const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
+
+  const totals = computeTotals();
+
+  // Build Telegram-friendly order (amount in cents, include items)
+  const telegramOrder = {
+    event: 'paid',
+    amount: Math.round(totals.grand * 100), // cents
     name,
     phone,
-    address,
-    items: cart.map(item => ({
-      id: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      unitPrice: item.price,
-      sauce: item.sauce || null,
-      freeSide: item.freeSide || null,
+    address: {
+      line1,
+      city: '',
+      postal_code: ''
+    },
+    cart: cart.map(i => ({
+      name: i.name,
+      quantity: i.quantity,
+      unitPrice: Math.round(i.price * 100),
+      sauce: i.sauce || null,
+      freeSide: i.freeSide || null
     })),
-    deliveryFee,
-    tip: currentTipAmount || 0,
-    paymentIntentId,
+    fulfilment,
+    paymentIntentId
   };
-  // Notify backend / Telegram (non‑blocking)
+
+  // Fire-and-forget Telegram notify (don’t block UX)
   try {
     fetch(api('/telegram-notify'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order),
+      body: JSON.stringify(telegramOrder),
     });
-  } catch (err) {
-    console.warn('Failed to notify Telegram:', err);
-  }
-  // Show thank you alert
+  } catch (_) {}
+
+  // Friendly confirmation
   alert(`Thank you, ${name}! Your order has been placed successfully.`);
-  // Clear cart and reset UI
+
+  // Reset client state/UI
   cart.length = 0;
   renderCart();
   updateCartButton();
   closeCart();
+
   document.getElementById('checkoutOverlay').classList.remove('show');
   document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
-  // Reset form fields but keep saved ones
+
   currentClientSecret = null;
   clearPaymentMessage();
 }
+
 
 /**
  * Initialise page event listeners.
