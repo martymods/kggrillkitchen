@@ -22,15 +22,14 @@ const mains = [
     name: 'Beef Ribs',
     price: 25.0,
     description: 'Slow‑cooked ribs glazed with our signature BBQ sauce.',
-    // Use the uploaded image for beef ribs
-    image: '/pictures/beefRibs.jpeg',
+    image: 'https://source.unsplash.com/featured/?beef-ribs,bbq',
   },
   {
     id: 'beef_burgers',
     name: 'Beef Burgers',
     price: 5.0,
     description: 'Juicy grilled burgers with fresh lettuce and tomato.',
-    image: '/pictures/beefBurger.jpeg',
+    image: 'https://source.unsplash.com/featured/?burger,grill',
   },
   {
     id: 'beef_patties',
@@ -58,7 +57,7 @@ const mains = [
     name: 'Snapper Fish',
     price: 26.0,
     description: 'Whole snapper lightly seasoned and fried to perfection.',
-    image: '/pictures/snapperFish.jpeg',
+    image: 'https://source.unsplash.com/featured/?snapper-fish',
   },
   {
     id: 'tilapia',
@@ -72,7 +71,7 @@ const mains = [
     name: 'Salmon',
     price: 26.0,
     description: 'Pan‑seared salmon fillet with lemon herb butter.',
-    image: '/pictures/salmon.jpeg',
+    image: 'https://source.unsplash.com/featured/?salmon',
   },
   {
     id: 'chicken_kabobs',
@@ -93,7 +92,7 @@ const mains = [
     name: 'Shrimp Kabobs',
     price: 16.0,
     description: 'Grilled shrimp skewers with garlic butter.',
-    image: '/pictures/shrimpKabobs.jpeg',
+    image: 'https://source.unsplash.com/featured/?shrimp-kebab',
   },
 ];
 
@@ -113,14 +112,14 @@ const sides = [
     name: 'Mac & Cheese',
     price: 6.5,
     description: 'Creamy macaroni baked with cheddar cheese.',
-    image: '/pictures/macandcheese.jpeg',
+    image: 'https://source.unsplash.com/featured/?mac-and-cheese',
   },
   {
     id: 'potato_wedges',
     name: 'Potato Wedges',
     price: 6.5,
     description: 'Seasoned potato wedges fried until crispy.',
-    image: '/pictures/potatoWedges.jpeg',
+    image: 'https://source.unsplash.com/featured/?potato-wedges',
   },
   {
     id: 'cassava_leaf',
@@ -201,12 +200,9 @@ const restaurantCoords = { lat: 39.9526, lon: -75.1652 };
 let userCoords = null;
 let deliveryFee = 0;
 
-// Tip state. When delivery is selected, customers can optionally leave a tip. The
-// tip can be a percentage (e.g. 0.15 for 15%) or a custom flat amount. The
-// `currentTipPercent` is either a number (percentage) or the string 'custom'.
-// `currentTipAmount` stores the dollar amount of the tip. These values are
-// updated via the tip buttons and custom input.
-let currentTipPercent = 0;
+// Keep track of the current tip amount set via the tip buttons. If no tip has
+// been selected this will remain 0. When the tip UI updates this value
+// will be overwritten. computeTotals() will always reference this value.
 let currentTipAmount = 0;
 
 // Stripe variables
@@ -234,13 +230,10 @@ let __apiBase = window.KG_API_BASE || (KG_META_API && KG_META_API.content) || ''
 if (typeof __apiBase === 'string') {
   __apiBase = __apiBase.replace(/\/$/, '');
 }
-// Fall back to the Delco Tech base if no API base is provided.  We default
-// to the KG router ("/kg") rather than the root of the domain.  This
-// ensures that all API requests (config, analytics, payment, telegram) hit
-// endpoints that are configured with CORS.  If you deploy your backend
-// elsewhere, provide a meta tag `<meta name="kg-api-base" content="https://your.backend.com/kg">`.
-// NOTE: Do not include a trailing slash in the base.
-const API_BASE = __apiBase || 'https://www.delcotechdivision.com/kg';
+// Fall back to the Delco Tech base if no API base is provided. This allows the
+// site to call the backend at www.delcotechdivision.com by default. If you
+// deploy your backend elsewhere, set the kg-api-base meta tag accordingly.
+const API_BASE = __apiBase || 'https://www.delcotechdivision.com';
 function api(url) {
   return API_BASE ? `${API_BASE}${url}` : url;
 }
@@ -320,8 +313,7 @@ function addToCart(item) {
       cartItem.sauce = 'none';
     }
     if (freeSideEligibleIds.has(item.id)) {
-      // Default free side to Jollof Rice (first choice)
-      cartItem.freeSide = freeSideChoices[0]?.id || '';
+      cartItem.freeSide = '';
     }
     cart.push(cartItem);
   }
@@ -412,7 +404,6 @@ function renderCart() {
     cartContainer.appendChild(row);
   });
   updateCartTotals();
-  updateTipSection();
 }
 
 /**
@@ -431,127 +422,67 @@ function updateQuantity(itemId, delta) {
 }
 
 /**
- * Compute and update subtotal, delivery fee, fees and total. Also toggles the
- * visibility of delivery and fees rows in the cart.
+ * Compute the monetary breakdown for the current cart and fulfilment selection.
+ * Returns an object with subtotal, fees, deliveryFee, tip and grand total.
  */
-function updateCartTotals() {
+function computeTotals() {
+  // Subtotal is sum of unit price × quantity for all cart items
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  let total = subtotal;
-  // Determine order type
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  // Delivery fee
-  const deliveryRow = document.getElementById('deliveryRow');
-  const deliveryFeeEl = document.getElementById('cartDeliveryFee');
-  if (orderType === 'delivery' && deliveryFee > 0) {
-    deliveryRow.hidden = false;
-    deliveryFeeEl.textContent = formatCurrency(deliveryFee);
-    total += deliveryFee;
-  } else {
-    deliveryRow.hidden = true;
-  }
-  // Basic estimate for service fee and tax (e.g. 10% combined)
-  const feesRow = document.getElementById('feesRow');
-  const cartFees = document.getElementById('cartFees');
+  // Service & tax: simple 10% of subtotal for this demo
   const fees = subtotal * 0.1;
-  if (subtotal > 0) {
-    feesRow.hidden = false;
-    cartFees.textContent = formatCurrency(fees);
-    total += fees;
-  } else {
-    feesRow.hidden = true;
-  }
-  // Include tip in total if applicable
-  const tipAmount = currentTipAmount || 0;
-  total += tipAmount;
-  // Update displayed subtotal and total
-  document.getElementById('cartSubtotal').textContent = formatCurrency(subtotal);
-  document.getElementById('cartTotal').textContent = formatCurrency(total);
-  // Update PaymentRequest total for Apple Pay/Google Pay
-  if (paymentRequest && typeof paymentRequest.update === 'function') {
-    const displayItems = [];
-    displayItems.push({ label: 'Subtotal', amount: Math.round(subtotal * 100) });
-    if (orderType === 'delivery' && deliveryFee > 0) {
-      displayItems.push({ label: 'Delivery fee', amount: Math.round(deliveryFee * 100) });
-    }
-    if (subtotal > 0) {
-      displayItems.push({ label: 'Service & tax', amount: Math.round(fees * 100) });
-    }
-    if (tipAmount > 0) {
-      displayItems.push({ label: 'Tip', amount: Math.round(tipAmount * 100) });
-    }
-    paymentRequest.update({
-      total: { label: 'KG Grill Kitchen', amount: Math.round(total * 100) },
-      displayItems,
-    });
-  }
-
-  // Update the tip UI now that totals may have changed. This recalculates
-  // percentage tip amounts and refreshes button labels and the summary.
-  updateTipSection();
+  // Delivery fee: use precomputed deliveryFee when order type is delivery
+  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const delivery = orderType === 'delivery' ? (deliveryFee || 0) : 0;
+  // Tip amount: if pickup, tip is always 0
+  const tip = orderType === 'delivery' ? (currentTipAmount || 0) : 0;
+  const total = subtotal + fees + delivery + tip;
+  return { subtotal, fees, deliveryFee: delivery, tip, grand: total };
 }
 
 /**
- * Update the tip section UI. When the order type is delivery and there are
- * items in the cart, this function shows the tip buttons, updates the
- * percentage buttons with dollar amounts based on the current subtotal,
- * fees and delivery fee, highlights the selected tip, toggles the custom
- * input visibility and updates the tip summary. If pickup is selected or
- * the cart is empty, the section is hidden and the tip values are reset.
+ * Compute and update subtotal, delivery fee, fees, tip and total. Also toggles the
+ * visibility of delivery and fees rows in the cart. Updates the Apple/Google Pay
+ * PaymentRequest totals if available.
  */
-function updateTipSection() {
-  const tipSection = document.getElementById('tipSection');
-  if (!tipSection) return;
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  // Hide tip section for pickup or empty cart
-  if (orderType !== 'delivery' || cart.length === 0) {
-    tipSection.hidden = true;
-    currentTipPercent = 0;
-    currentTipAmount = 0;
-    const tipAmountEl = document.getElementById('tipAmount');
-    if (tipAmountEl) tipAmountEl.textContent = formatCurrency(0);
-    return;
-  }
-  tipSection.hidden = false;
-  // Calculate base for percentage tips: subtotal + fees + delivery
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const fees = subtotal * 0.1;
-  const base = subtotal + fees + (deliveryFee || 0);
-  // Update button labels with dollar amounts
-  document.querySelectorAll('.tip-button[data-tip-percent]').forEach(btn => {
-    const pctAttr = btn.getAttribute('data-tip-percent');
-    if (pctAttr === 'custom') {
-      btn.textContent = 'Custom';
-      return;
-    }
-    const pct = parseFloat(pctAttr);
-    const amt = base * pct;
-    btn.textContent = `${Math.round(pct * 100)}% (${formatCurrency(amt)})`;
-    // Highlight selected button
-    if (currentTipPercent === pct) {
-      btn.classList.add('selected');
-    } else {
-      btn.classList.remove('selected');
-    }
-  });
-  // Handle custom tip UI
-  const customContainer = document.getElementById('customTipContainer');
-  if (currentTipPercent === 'custom') {
-    customContainer.hidden = false;
-    // Ensure the custom input reflects the current tip amount
-    const input = document.getElementById('customTipInput');
-    if (input && document.activeElement !== input) {
-      input.value = currentTipAmount ? currentTipAmount.toFixed(2) : '';
-    }
+function updateCartTotals() {
+  const totals = computeTotals();
+  // Show/hide delivery row
+  const deliveryRow = document.getElementById('deliveryRow');
+  const deliveryFeeEl = document.getElementById('cartDeliveryFee');
+  if (totals.deliveryFee > 0) {
+    deliveryRow.hidden = false;
+    deliveryFeeEl.textContent = formatCurrency(totals.deliveryFee);
   } else {
-    customContainer.hidden = true;
-    // Deselect custom button if not selected
-    document.querySelectorAll('.tip-button[data-tip-percent="custom"]').forEach(btn => btn.classList.remove('selected'));
+    deliveryRow.hidden = true;
+    deliveryFeeEl.textContent = formatCurrency(0);
   }
-  // Update the tip summary
-  const tipAmountEl = document.getElementById('tipAmount');
-  if (tipAmountEl) {
-    tipAmountEl.textContent = formatCurrency(currentTipAmount || 0);
+  // Show fees row if subtotal > 0
+  const feesRow = document.getElementById('feesRow');
+  const cartFees = document.getElementById('cartFees');
+  if (totals.subtotal > 0) {
+    feesRow.hidden = false;
+    cartFees.textContent = formatCurrency(totals.fees);
+  } else {
+    feesRow.hidden = true;
+    cartFees.textContent = formatCurrency(0);
   }
+  // Update subtotal and total
+  document.getElementById('cartSubtotal').textContent = formatCurrency(totals.subtotal);
+  document.getElementById('cartTotal').textContent = formatCurrency(totals.grand);
+  // Update PaymentRequest totals so Apple Pay / Google Pay shows correct amounts
+  if (paymentRequest && typeof paymentRequest.update === 'function') {
+    const displayItems = [];
+    if (totals.subtotal > 0) displayItems.push({ label: 'Subtotal', amount: Math.round(totals.subtotal * 100) });
+    if (totals.deliveryFee > 0) displayItems.push({ label: 'Delivery fee', amount: Math.round(totals.deliveryFee * 100) });
+    if (totals.subtotal > 0) displayItems.push({ label: 'Service & tax', amount: Math.round(totals.fees * 100) });
+    if (totals.tip > 0) displayItems.push({ label: 'Tip', amount: Math.round(totals.tip * 100) });
+    paymentRequest.update({
+      total: { label: 'KG Grill Kitchen', amount: Math.round(totals.grand * 100) },
+      displayItems,
+    });
+  }
+  // Refresh tip buttons and summary
+  updateTipSection();
 }
 
 /**
@@ -668,7 +599,7 @@ function showMapAndDistance() {
   ], { color: lineColor }).addTo(map);
   // Fit the map to show both the restaurant and customer and cap zoom so it
   // doesn’t zoom in too closely. The maxZoom prevents an overly zoomed map.
-  map.fitBounds(polyline.getBounds(), { padding: [20, 20], maxZoom: 12 });
+  map.fitBounds(polyline.getBounds(), { padding: [20, 20], maxZoom: 14 });
   // Compute distance & fee
   const distance = computeDistanceMiles(restaurantCoords.lat, restaurantCoords.lon, userCoords.lat, userCoords.lon);
   deliveryFee = computeDeliveryFee(distance);
@@ -701,8 +632,6 @@ function updateOrderType() {
   }
   // Persist selection
   saveField('kg_orderType', orderType);
-  // Update tip UI when order type changes
-  updateTipSection();
 }
 
 /**
@@ -717,13 +646,7 @@ async function initStripe() {
     const resp = await fetch(api('/config'));
     if (resp.ok) {
       const data = await resp.json();
-      // Support various response shapes from the backend. The KG router
-      // returns { publishableKey } whereas the legacy endpoint returns
-      // stripePublishableKey or stripePk.  Prefer publishableKey if present.
-      publishableKey = data.publishableKey
-        || data.stripePublishableKey
-        || data.stripePk
-        || '';
+      publishableKey = data.stripePublishableKey || data.stripePk || '';
     }
   } catch (err) {
     console.warn('Failed to fetch Stripe config:', err);
@@ -740,73 +663,58 @@ async function initStripe() {
   // Mount the card element
   cardElement = elements.create('card');
   cardElement.mount('#card-element');
-  // PaymentRequest for Apple Pay / Google Pay
-  paymentRequest = stripe.paymentRequest({
-    country: 'US',
-    currency: 'usd',
-    total: { label: 'KG Grill Kitchen', amount: 0 },
-    requestPayerName: true,
-    requestPayerEmail: true,
-    requestPayerPhone: true,
-    requestShipping: true,
-  });
-  paymentRequest.on('paymentmethod', async (ev) => {
-    try {
-      // Ensure we have a client secret
-      const clientSecret = await createPaymentIntent();
-      if (!clientSecret) throw new Error('Could not create PaymentIntent');
-      // Confirm the payment using the wallet payment method
-      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: ev.paymentMethod.id,
-        shipping: {
-          name: document.getElementById('customerName').value,
-          phone: document.getElementById('customerPhone').value,
-          address: {
-            line1: document.getElementById('deliveryAddress').value || '',
-            city: '',
-            state: '',
-            postal_code: '',
-            country: 'US',
-          },
-        },
-        receipt_email: null,
-      }, { handleActions: false });
-      if (error) {
-        ev.complete('fail');
-        displayPaymentMessage(error.message || 'Payment failed');
-      } else {
-        ev.complete('success');
-        handleOrderSuccess(paymentIntent.id);
-      }
-    } catch (err) {
-      ev.complete('fail');
-      displayPaymentMessage(err.message || 'Payment error');
-    }
-  });
-  // Mount the PaymentRequestButton only if the wallet can make payments. This
-  // prevents an integration error from Stripe. The canMakePayment() call
-  // returns a promise that resolves to a payment method result or null.
+  // PaymentRequest for Apple Pay / Google Pay. Compute current totals up front.
   try {
-    const prButton = elements.create('paymentRequestButton', { paymentRequest });
-    paymentRequest.canMakePayment().then(result => {
-      if (result) {
-        const btnWrapper = document.getElementById('payment-request-button');
-        if (btnWrapper) {
-          btnWrapper.hidden = false;
-          prButton.mount('#payment-request-button');
-        }
-      } else {
-        // If Apple/Google Pay is not available, keep the button hidden
-        const btnWrapper = document.getElementById('payment-request-button');
-        if (btnWrapper) btnWrapper.hidden = true;
-      }
-    }).catch(() => {
-      // In case of error, hide the button
-      const btnWrapper = document.getElementById('payment-request-button');
-      if (btnWrapper) btnWrapper.hidden = true;
+    const totals = computeTotals();
+    paymentRequest = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: { label: 'KG Grill Kitchen', amount: Math.round(totals.grand * 100) },
+      requestPayerName: true,
+      requestPayerPhone: true,
     });
-  } catch (error) {
-    console.warn('Error mounting PaymentRequestButton', error);
+    paymentRequest.on('paymentmethod', async (ev) => {
+      try {
+        const clientSecret = await createPaymentIntent();
+        if (!clientSecret) throw new Error('Could not create PaymentIntent');
+        const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: ev.paymentMethod.id,
+          shipping: {
+            name: document.getElementById('customerName').value,
+            phone: document.getElementById('customerPhone').value,
+            address: {
+              line1: document.getElementById('deliveryAddress').value || '',
+              city: (document.getElementById('deliveryCity')?.value || ''),
+              postal_code: (document.getElementById('deliveryZip')?.value || ''),
+              country: 'US',
+            },
+          },
+        }, { handleActions: false });
+        if (error) {
+          ev.complete('fail');
+          displayPaymentMessage(error.message || 'Payment failed');
+        } else {
+          ev.complete('success');
+          handleOrderSuccess(paymentIntent.id);
+        }
+      } catch (err) {
+        ev.complete('fail');
+        displayPaymentMessage(err.message || 'Payment error');
+      }
+    });
+    // Check wallet availability before mounting
+    const prResult = await paymentRequest.canMakePayment();
+    if (prResult) {
+      const prButton = elements.create('paymentRequestButton', { paymentRequest });
+      // Reveal the mount point and mount the button
+      const prContainer = document.getElementById('payment-request-button');
+      if (prContainer) {
+        prContainer.style.display = 'block';
+        prButton.mount('#payment-request-button');
+      }
+    }
+  } catch (e) {
+    console.warn('Payment Request unavailable', e);
   }
 }
 
@@ -817,28 +725,27 @@ async function initStripe() {
 async function createPaymentIntent() {
   // Avoid duplicate creation if we already have a client secret
   if (currentClientSecret) return currentClientSecret;
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  const name = document.getElementById('customerName').value;
-  const phone = document.getElementById('customerPhone').value;
-  const address = document.getElementById('deliveryAddress').value;
-  // Build payload with items and extras
-  const items = cart.map(item => ({
-    id: item.id,
+  // Compute totals once to determine the amount and tip
+  const totals = computeTotals();
+  // Build a simplified cart array for backend metadata
+  const simplifiedCartArray = cart.map(item => ({
     name: item.name,
     unitPrice: Math.round(item.price * 100),
     quantity: item.quantity,
-    sauce: item.sauce || null,
-    freeSide: item.freeSide || null,
   }));
+  const fulfilment = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
   const payload = {
-    items,
-    currency: 'usd',
-    orderType,
-    name,
-    phone,
-    address,
-    deliveryCents: Math.round(deliveryFee * 100),
-    tipCents: Math.round((currentTipAmount || 0) * 100),
+    amount: Math.round(totals.grand * 100),
+    tip: Math.round((totals.tip || 0) * 100),
+    fulfilment,
+    name: (document.getElementById('customerName')?.value || '').trim(),
+    phone: (document.getElementById('customerPhone')?.value || '').trim(),
+    address: {
+      line1: (document.getElementById('deliveryAddress')?.value || '').trim(),
+      city: (document.getElementById('deliveryCity')?.value || '').trim(),
+      postal_code: (document.getElementById('deliveryZip')?.value || '').trim(),
+    },
+    cart: simplifiedCartArray,
   };
   try {
     const resp = await fetch(api('/create-payment-intent'), {
@@ -882,29 +789,29 @@ function clearPaymentMessage() {
  * Telegram notification and resets the cart.
  */
 async function handleOrderSuccess(paymentIntentId) {
-  // Build order summary
-  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  const name = document.getElementById('customerName').value;
-  const phone = document.getElementById('customerPhone').value;
-  const address = document.getElementById('deliveryAddress').value;
+  // Build full order summary for Telegram notification
+  const totals = computeTotals();
+  const fulfilment = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const name = (document.getElementById('customerName')?.value || '').trim();
+  const phone = (document.getElementById('customerPhone')?.value || '').trim();
+  const address = {
+    line1: (document.getElementById('deliveryAddress')?.value || '').trim(),
+    city: (document.getElementById('deliveryCity')?.value || '').trim(),
+    postal_code: (document.getElementById('deliveryZip')?.value || '').trim(),
+  };
   const order = {
-    orderType,
+    event: 'paid',
+    amount: Math.round(totals.grand * 100),
     name,
     phone,
     address,
-    items: cart.map(item => ({
-      id: item.id,
+    cart: cart.map(item => ({
       name: item.name,
       quantity: item.quantity,
-      unitPrice: item.price,
-      sauce: item.sauce || null,
-      freeSide: item.freeSide || null,
+      unitPrice: Math.round(item.price * 100),
     })),
-    deliveryFee,
-    tip: currentTipAmount || 0,
-    paymentIntentId,
   };
-  // Notify backend / Telegram (non‑blocking)
+  // Notify backend / Telegram (non-blocking)
   try {
     fetch(api('/telegram-notify'), {
       method: 'POST',
@@ -961,14 +868,10 @@ function initEventListeners() {
     }
     // Notify backend via Telegram when user initiates checkout
     try {
-      const subtotalPreview = cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
-      const feesPreview = subtotalPreview * 0.1;
-      const totalPreview = subtotalPreview + (deliveryFee || 0) + feesPreview + (currentTipAmount || 0);
       const previewOrder = {
         event: 'checkout_initiated',
         items: cart.map(item => ({ id: item.id, quantity: item.quantity, sauce: item.sauce || null, freeSide: item.freeSide || null })),
-        total: totalPreview,
-        tip: currentTipAmount || 0,
+        total: cart.reduce((sum, it) => sum + it.price * it.quantity, 0) + (deliveryFee || 0),
       };
       fetch(api('/telegram-notify'), {
         method: 'POST',
@@ -992,50 +895,6 @@ function initEventListeners() {
   document.getElementById('customerName').addEventListener('input', e => saveField('kg_name', e.target.value));
   document.getElementById('customerPhone').addEventListener('input', e => saveField('kg_phone', e.target.value));
   document.getElementById('deliveryAddress').addEventListener('input', e => saveField('kg_address', e.target.value));
-
-  // Tip buttons
-  document.querySelectorAll('.tip-button[data-tip-percent]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Remove selection from all buttons
-      document.querySelectorAll('.tip-button').forEach(b => b.classList.remove('selected'));
-      // Mark this button as selected
-      btn.classList.add('selected');
-      const pctAttr = btn.getAttribute('data-tip-percent');
-      // Calculate base for percentage tips
-      const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const fees = subtotal * 0.1;
-      const base = subtotal + fees + (deliveryFee || 0);
-      if (pctAttr === 'custom') {
-        currentTipPercent = 'custom';
-        // Show custom input container
-        const customContainer = document.getElementById('customTipContainer');
-        if (customContainer) customContainer.hidden = false;
-        // Reset custom tip value to currentTipAmount or 0
-        const input = document.getElementById('customTipInput');
-        if (input && document.activeElement !== input) {
-          input.value = currentTipAmount ? currentTipAmount.toFixed(2) : '';
-        }
-      } else {
-        const pct = parseFloat(pctAttr);
-        currentTipPercent = pct;
-        currentTipAmount = base * pct;
-        // Hide custom input container
-        const customContainer = document.getElementById('customTipContainer');
-        if (customContainer) customContainer.hidden = true;
-      }
-      updateCartTotals();
-    });
-  });
-  // Custom tip input handler
-  const customInput = document.getElementById('customTipInput');
-  if (customInput) {
-    customInput.addEventListener('input', e => {
-      currentTipPercent = 'custom';
-      const val = parseFloat(e.target.value);
-      currentTipAmount = Number.isFinite(val) && val > 0 ? val : 0;
-      updateCartTotals();
-    });
-  }
   // Form submission (card payment)
   document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
     e.preventDefault();
