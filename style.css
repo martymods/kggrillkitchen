@@ -1,362 +1,488 @@
-/* KG Grill Kitchen custom styles */
+/*
+ * KG Grill Kitchen – styles
+ *
+ * This stylesheet defines the look and feel for the KG Grill Kitchen ordering
+ * site. The design favours a clean white background with green accents,
+ * mirroring the fresh ingredients of a grill kitchen. All components are
+ * responsive and work on both desktop and mobile sizes. You can tweak
+ * variables in the :root block to adjust colours globally.
+ */
 
 :root {
-  --kg-green: #09a450;
-  --kg-green-dark: #07853d;
-  --ink: #202124;
-  --muted: #5f6368;
-  --bg: #ffffff;
-  --card: #f6fff8;
+  --primary-bg: #ffffff;
+  --primary-fg: #2f2f2f;
+  --accent: #2e8b57; /* sea green */
+  --accent-hover: #46a96e;
+  --light-bg: #f5f5f5;
+  --border-radius: 8px;
+  --max-width: 1200px;
 }
 
-body.kg-green {
-  background: var(--bg);
-  color: var(--ink);
+* {
+  box-sizing: border-box;
+}
+
+body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  line-height: 1.5;
 }
 
-/* Sticky header */
+/* Header styles */
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 9999;
+  background: var(--light-bg);
+  padding: 1rem;
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
-  padding: 10px 12px;
-  background: var(--bg);
-  border-bottom: 1px solid #e6e9ef;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
 }
 
-.header .site-title {
-  font-size: 18px;
+.site-title {
   margin: 0;
-  color: var(--kg-green-dark);
+  font-size: 1.8rem;
+  color: var(--accent);
 }
 
+/* Order type selector */
 .order-type {
   display: flex;
-  gap: 8px;
+  gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
 }
-
-.view-cart-btn {
-  background: var(--kg-green);
-  color: #fff;
-  border: 0;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-weight: 700;
+.order-type label {
+  display: flex;
+  align-items: center;
   cursor: pointer;
+  gap: 0.25rem;
+}
+.order-type input[type="radio"] {
+  margin: 0;
 }
 
+/* Cart button */
+.view-cart-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.view-cart-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Main content container */
 .container {
-  max-width: 1100px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-/* Menu grid */
+/* Menu sections */
+.menu-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
 }
-
-.card {
-  background: var(--card);
-  border: 1px solid #dde3ea;
-  border-radius: 8px;
+.menu-item {
+  background: var(--light-bg);
+  border-radius: var(--border-radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: transform 0.1s ease;
 }
-
-.card img {
+.menu-item:hover {
+  transform: translateY(-4px);
+}
+.menu-item img {
   width: 100%;
-  height: 160px;
+  height: 150px;
   object-fit: cover;
 }
-
-.card-body {
-  padding: 10px;
+.menu-content {
+  padding: 0.8rem;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
-
-.card-body h3 {
-  margin: 0;
-  font-size: 1rem;
+.menu-content h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  color: var(--primary-fg);
 }
-
-.card-body .price {
-  font-weight: 700;
-  color: var(--kg-green-dark);
-}
-
-.card-body .sauce-line {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.menu-content p {
+  margin: 0 0 0.5rem;
   font-size: 0.9rem;
+  color: #666;
+  flex-grow: 1;
 }
-
-.card-body button {
-  background: var(--kg-green);
-  border: 0;
-  color: #fff;
-  padding: 6px;
-  border-radius: 6px;
+.menu-content .price {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+.menu-content button {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+.menu-content button:hover {
+  background: var(--accent-hover);
 }
 
-.card-body button:hover {
-  background: var(--kg-green-dark);
-}
-
-/* Cart drawer styles */
-.cart-drawer {
+/* Cart panel */
+.cart-panel {
   position: fixed;
   right: 0;
   top: 0;
-  height: 100vh;
-  width: 390px;
-  max-width: 100%;
+  width: 320px;
+  height: 100%;
+  background: var(--light-bg);
+  box-shadow: -2px 0 8px rgba(0,0,0,0.5);
   transform: translateX(100%);
-  transition: transform 0.25s;
-  background: var(--bg);
-  border-left: 1px solid #e6e9ef;
-  z-index: 10000;
+  transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
+  z-index: 1000;
 }
-
-.cart-drawer.open {
+.cart-panel.open {
   transform: translateX(0);
 }
 
 .cart-header {
+  padding: 1rem;
+  background: var(--accent);
+  color: var(--primary-bg);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border-bottom: 1px solid #e6e9ef;
-}
-
-.cart-actions-inline {
-  display: flex;
-  gap: 10px;
   align-items: center;
 }
-
-.btn-link {
+.cart-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.cart-header button {
   background: transparent;
-  border: 0;
-  color: var(--kg-green-dark);
-  text-decoration: underline;
+  border: none;
+  color: inherit;
+  font-size: 1.4rem;
   cursor: pointer;
-  font-size: 0.9rem;
 }
 
-#closeCart {
-  font-size: 24px;
-  background: transparent;
-  border: 0;
-  line-height: 1;
+/* Continue shopping button inside cart header */
+.continue-shopping-btn {
+  background: var(--primary-bg);
+  color: var(--accent);
+  border: 1px solid var(--primary-bg);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
   cursor: pointer;
+}
+.continue-shopping-btn:hover {
+  background: var(--light-bg);
+  border-color: var(--accent);
 }
 
 .cart-items {
-  flex: 1;
+  flex-grow: 1;
   overflow-y: auto;
-  padding: 10px;
-}
-
-.row-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.95rem;
-}
-
-.row-item .name {
-  flex: 1;
-}
-
-.row-item .qty-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.row-item .qty-controls button {
-  background: var(--kg-green);
-  color: #fff;
-  border: 0;
-  padding: 2px 6px;
-  font-size: 0.9rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.row-item .qty-controls span {
-  min-width: 18px;
-  text-align: center;
-}
-
-.row-item .line {
-  min-width: 60px;
-  text-align: right;
-}
-
-.free-side {
-  padding: 12px 10px;
-  border-top: 1px dashed #dde3ea;
-  border-bottom: 1px dashed #dde3ea;
-  background: var(--card);
-}
-
-.delivery-fields {
-  padding: 10px;
-  display: grid;
-  gap: 10px;
-}
-
-.field {
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 1rem;
 }
 
-.field.two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.field input,
-.tips input,
-select {
-  padding: 10px;
-  border: 1px solid #dce3ea;
-  border-radius: 8px;
-}
-
-.delivery-map-wrap {
-  border: 1px solid #e6e9ef;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.delivery-map {
-  height: 180px;
-}
-
-.eta {
-  margin: 8px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.tips {
-  padding: 10px;
-  border-top: 1px solid #e6e9ef;
-}
-
-.tip-buttons {
+.cart-item {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.tip-btn {
-  border: 1px solid #dce3ea;
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.tip-btn.selected {
-  background: var(--kg-green);
-  color: #fff;
-}
-
-.custom-tip {
-  margin-top: 8px;
-}
-
-.custom-tip label {
-  display: flex;
-  gap: 6px;
   align-items: center;
+  gap: 0.5rem;
 }
-
-.custom-tip input {
-  width: 100%;
+.cart-item img {
+  width: 50px;
+  height: 50px;
+  border-radius: 4px;
+  object-fit: cover;
 }
-
-.tip-amount-line {
-  margin-top: 6px;
+.cart-item-details {
+  flex-grow: 1;
+}
+.cart-item-details h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+.cart-item-details .quantity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.cart-item-details .quantity button {
+  background: var(--accent);
+  border: none;
+  color: var(--primary-bg);
+  padding: 0.2rem 0.5rem;
   font-size: 0.9rem;
-  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.cart-item-details .price {
+  margin-top: 0.25rem;
+  color: var(--accent);
+  font-weight: bold;
 }
 
-.totals {
-  padding: 10px;
-  border-top: 1px solid #e6e9ef;
+.cart-footer {
+  padding: 1rem;
+  background: var(--light-bg);
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-
-.totals .row {
+.totals-row {
+  font-size: 1rem;
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  align-items: center;
 }
-
-.totals .grand {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--kg-green-dark);
+.grand-total {
+  font-size: 1.2rem;
+  font-weight: bold;
 }
-
-.payment {
-  padding: 10px;
-  border-top: 1px solid #e6e9ef;
-}
-
-.btn-primary {
-  width: 100%;
-  padding: 12px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--kg-green);
-  color: #fff;
-  font-weight: 800;
+.checkout-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.7rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
   cursor: pointer;
+  margin-top: 0.5rem;
+}
+.checkout-btn:hover {
+  background: var(--accent-hover);
 }
 
-.status {
-  padding: 8px 10px;
-  color: var(--muted);
+/* Overlay for checkout */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+.overlay.show {
+  display: flex;
+}
+.checkout-form {
+  background: var(--light-bg);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  color: var(--primary-fg);
+  position: relative;
+}
+.checkout-form h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--accent);
+  font-size: 1.4rem;
+}
+.checkout-form label {
+  display: block;
+  margin-top: 0.5rem;
+}
+.checkout-form input,
+.checkout-form textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+.checkout-error {
+  color: #a00;
+  margin: 0 0 1rem;
   font-size: 0.9rem;
 }
 
-/* Hide Leaflet attribution */
-.leaflet-control-attribution,
-.leaflet-control-logo {
+/* Delivery map and summary */
+.delivery-map {
+  height: 200px;
+  margin-top: 0.5rem;
+}
+.distance-summary {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Payment fieldset */
+.payment-fieldset {
+  margin-top: 1rem;
+  border: none;
+  padding: 0;
+}
+.payment-fieldset legend {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+.card-element {
+  background: #fff;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  min-height: 40px;
+}
+.payment-message {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.place-order-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.7rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+.place-order-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Tip section styling */
+.tip-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+.tip-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.tip-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+.tip-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.tip-button {
+  background: var(--light-bg);
+  color: var(--primary-fg);
+  border: 1px solid var(--accent);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.tip-button:hover {
+  background: var(--accent);
+  color: var(--primary-bg);
+}
+.tip-button.selected {
+  background: var(--accent);
+  color: var(--primary-bg);
+}
+.custom-tip-container {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.custom-tip-container.hidden {
+  display: none;
+}
+.custom-tip-container input {
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.tip-summary {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--primary-fg);
+}
+
+@media (max-width: 600px) {
+  .cart-panel {
+    width: 100%;
+  }
+
+  /* On small screens keep the header visible at the top when scrolling */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 1002;
+  }
+}
+
+/* Hide the default Leaflet attribution to keep the map clean */
+.leaflet-control-attribution {
   display: none !important;
 }
 
-/* Responsive tweaks */
-@media (max-width: 640px) {
-  .header .order-type span {
-    display: none;
-  }
+/* Free side and sauce selectors styling inside the cart */
+.cart-item-details .free-side-select,
+.cart-item-details .sauce-select {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+}
+.cart-item-details .free-side-select label,
+.cart-item-details .sauce-select label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.cart-item-details select {
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  font-size: 0.85rem;
 }
