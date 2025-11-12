@@ -371,6 +371,26 @@ body {
   font-size: 0.9rem;
 }
 
+/* Limit overlay height and allow scrolling on mobile & desktop */
+.cart-drawer,
+.checkout-panel,
+.checkout-form {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Keep header fixed inside the drawer if you have one */
+.cart-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+}
+
+/* Give breathing room for the pay button to be fully visible */
+.payment { padding-bottom: 16px; }
+
+
 .place-order-btn {
   background: var(--accent);
   color: var(--primary-bg);
