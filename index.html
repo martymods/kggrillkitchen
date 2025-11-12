@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KG Grill Kitchen | Order Online</title>
+  <!-- Favicon (optional) -->
+  <link rel="icon" href="images/favicon.png">
+  <!-- Leaflet styles for the map (no integrity to avoid SRI errors) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Local site styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Optional configuration for API base and Stripe publishable key.
+       If your API is hosted on a different domain (e.g. www.delcotechdivision.com)
+       add a meta tag like this and fill in the correct URL (no trailing slash):
+       <meta name="kg-api-base" content="https://www.delcotechdivision.com">
+       To supply the Stripe publishable key without calling /config, you can
+       define a meta tag for kg-stripe-pk:
+       <meta name="kg-stripe-pk" content="pk_live_xxx">
+    -->
+</head>
+<body>
+  <!-- Page header with restaurant name, order type selector and cart button -->
+  <header class="header">
+    <h1 class="site-title">KG Grill Kitchen</h1>
+    <div class="order-type" role="group" aria-label="Select fulfilment method">
+      <span>Select Order Type:</span>
+      <label><input type="radio" name="orderType" value="pickup" checked>Pickup</label>
+      <label><input type="radio" name="orderType" value="delivery">Delivery</label>
+    </div>
+    <button id="viewCartBtn" class="view-cart-btn" aria-label="View your cart">Cart (0)</button>
+  </header>
+
+  <!-- Main content container -->
+  <main class="container">
+    <!-- Mains menu section -->
+    <section class="menu-section" id="main-menu">
+      <h2>Mains</h2>
+      <div class="menu-grid" id="mains-container"><!-- items injected via JS --></div>
+    </section>
+    <!-- Sides menu section -->
+    <section class="menu-section" id="side-menu">
+      <h2>Sides</h2>
+      <div class="menu-grid" id="sides-container"><!-- items injected via JS --></div>
+    </section>
+  </main>
+
+  <!-- Sliding cart panel -->
+  <aside class="cart-panel" id="cartPanel" aria-hidden="true">
+    <div class="cart-header">
+      <h2>Your Order</h2>
+      <!-- Close button to hide the cart -->
+      <button id="closeCart" aria-label="Close cart">×</button>
+      <!-- Continue shopping button allows users to collapse the cart without losing items -->
+      <button id="continueShoppingBtn" class="continue-shopping-btn" aria-label="Continue shopping">Continue shopping</button>
+    </div>
+    <div class="cart-items" id="cartItems"><!-- cart items injected via JS --></div>
+    <div class="cart-footer">
+      <div class="totals-row">
+        <span>Subtotal</span><span id="cartSubtotal">$0.00</span>
+      </div>
+      <div class="totals-row" id="deliveryRow" hidden>
+        <span>Delivery fee</span><span id="cartDeliveryFee">$0.00</span>
+      </div>
+      <div class="totals-row" id="feesRow" hidden>
+        <span>Service &amp; tax</span><span id="cartFees">$0.00</span>
+      </div>
+      <div class="totals-row grand-total">
+        <strong>Total</strong><strong id="cartTotal">$0.00</strong>
+      </div>
+      <button class="checkout-btn" id="checkoutButton">Proceed to checkout</button>
+    </div>
+  </aside>
+
+  <!-- Checkout modal overlay -->
+  <div class="overlay" id="checkoutOverlay" aria-hidden="true">
+    <form id="checkoutForm" class="checkout-form" novalidate>
+      <h3>Checkout</h3>
+      <p id="checkoutError" class="checkout-error" role="alert" hidden></p>
+      <!-- Delivery fields (hidden until delivery selected) -->
+      <div id="deliveryFields" class="delivery-fields" hidden>
+        <label for="deliveryAddress">Delivery address</label>
+        <textarea id="deliveryAddress" name="address" rows="2" placeholder="Use your current location"></textarea>
+        <div id="mapContainer" class="delivery-map" aria-label="Delivery map" hidden></div>
+        <p id="distanceSummary" class="distance-summary"></p>
+      </div>
+      <label for="customerName">Name</label>
+      <input type="text" id="customerName" name="name" autocomplete="name" required>
+      <label for="customerPhone">Phone number</label>
+      <input type="tel" id="customerPhone" name="phone" autocomplete="tel" required>
+      <!-- Payment UI -->
+      <fieldset id="paymentFieldset" class="payment-fieldset">
+        <legend>Payment</legend>
+        <div id="payment-request-button" hidden></div>
+        <div id="card-element" class="card-element"></div>
+        <div id="payment-message" class="payment-message" role="alert" hidden></div>
+      </fieldset>
+
+      <!-- Tip selection (shown during delivery checkout) -->
+      <section id="tipSection" class="tip-section" hidden>
+        <h4>Tip your driver</h4>
+        <p class="tip-note">100% of gratuity goes to our delivery drivers.</p>
+        <div class="tip-buttons" role="group" aria-label="Tip options">
+          <button type="button" class="tip-button" data-tip="0.15">15% ($0.00)</button>
+          <button type="button" class="tip-button" data-tip="0.4">40% ($0.00)</button>
+          <button type="button" class="tip-button" data-tip="1">100% ($0.00)</button>
+          <button type="button" class="tip-button" data-tip="custom">Custom</button>
+        </div>
+        <div id="customTipContainer" class="custom-tip-container hidden" aria-hidden="true">
+          <label for="customTipInput" class="custom-tip-label">Enter custom tip amount ($)</label>
+          <input type="number" id="customTipInput" name="custom-tip" min="0" step="0.01" value="0">
+        </div>
+        <div class="tip-summary">
+          <span>Tip amount</span>
+          <strong id="tipAmount">$0.00</strong>
+        </div>
+      </section>
+      <button type="submit" id="placeOrderButton" class="place-order-btn">Pay &amp; place order</button>
+    </form>
+  </div>
+
+  <!-- External libraries -->
+  <!-- Leaflet JS (no integrity to avoid SRI errors) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://js.stripe.com/v3"></script>
+  <!-- Analytics placeholder (sends page views and events to backend) -->
+  <script src="analytics-client.js"></script>
+  <!-- Main application logic -->
+  <script src="script.js"></script>
+</body>
+</html>
