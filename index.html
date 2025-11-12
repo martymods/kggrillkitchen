@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>KG Grill Kitchen — Order Online</title>
+
+  <!-- IMPORTANT: Configure API base and Stripe key via meta tags.  -->
+  <!-- Specify the base URL for all API calls (no trailing slash).  -->
+  <!-- For example, to use the KG router on Delco Tech set:  -->
+  <!--   <meta name="kg-api-base" content="https://www.delcotechdivision.com/kg">  -->
+  <meta name="kg-api-base" content="https://www.delcotechdivision.com/kg" />
+  <!-- Optionally inject your Stripe publishable key here. If left empty, the script will request /config. -->
+  <meta name="kg-stripe-pk" content="" />
+
+  <!-- Inline favicon to avoid 404s for missing favicon files -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%2309a450'/%3E%3Ctext x='50%25' y='54%25' font-family='Arial' font-size='34' text-anchor='middle' fill='%23fff'%3EKG%3C/text%3E%3C/svg%3E" />
+
+  <!-- Local stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet styles (no integrity attribute to prevent SRI errors) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body class="kg-green">
+
+  <!-- Sticky header with restaurant name, order type and cart button -->
+  <header class="header">
+    <h1 class="site-title">KG&nbsp;Grill&nbsp;Kitchen</h1>
+    <div class="order-type" role="group" aria-label="Select fulfilment method">
+      <span>Select Order Type:</span>
+      <label><input type="radio" name="orderType" value="pickup" checked>Pickup</label>
+      <label><input type="radio" name="orderType" value="delivery">Delivery</label>
+    </div>
+    <button id="viewCartBtn" class="view-cart-btn" aria-label="View your cart">Cart (0)</button>
+  </header>
+
+  <!-- Main content: menu grid -->
+  <main class="container">
+    <section id="menu" class="menu-grid"></section>
+
+    <!-- Cart drawer that slides in from the right -->
+    <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
+      <div class="cart-header">
+        <h2>Your Order</h2>
+        <div class="cart-actions-inline">
+          <button id="continueShopping" class="btn-link">Continue shopping</button>
+          <button id="closeCart" aria-label="Close cart">×</button>
+        </div>
+      </div>
+      <div id="cartItems" class="cart-items"></div>
+      <!-- Free side selector (for mains that include a free side) -->
+      <div id="freeSideBlock" class="free-side hidden" aria-live="polite">
+        <label for="freeSideSelect">Choose your free side:</label>
+        <select id="freeSideSelect">
+          <option value="Jollof Rice" selected>Jollof Rice</option>
+          <option value="Mac &amp; Cheese">Mac &amp; Cheese</option>
+          <option value="Potato Wedges">Potato Wedges</option>
+        </select>
+      </div>
+      <!-- Delivery fields appear when Delivery is selected -->
+      <div id="deliveryFields" class="delivery-fields hidden">
+        <label class="field">
+          <span>Name</span>
+          <input id="deliveryName" autocomplete="name" />
+        </label>
+        <label class="field">
+          <span>Phone</span>
+          <input id="deliveryPhone" autocomplete="tel" />
+        </label>
+        <div class="delivery-map-wrap hidden" id="deliveryMapWrap">
+          <div id="deliveryMap" class="delivery-map" aria-label="Delivery map"></div>
+          <p id="deliveryEta" class="eta"></p>
+        </div>
+        <label class="field">
+          <span>Address</span>
+          <input id="deliveryAddress" autocomplete="street-address" placeholder="Street address" />
+        </label>
+        <div class="field two">
+          <label><span>City</span><input id="deliveryCity" autocomplete="address-level2" /></label>
+          <label><span>ZIP</span><input id="deliveryZip" autocomplete="postal-code" /></label>
+        </div>
+        <!-- Tip section shown only when delivery is selected -->
+        <section id="tipSection" class="tips">
+          <h3>Tip your driver</h3>
+          <div class="tip-buttons" role="group" aria-label="Tip options">
+            <button class="tip-btn" data-tip="0.15">15% ($0.00)</button>
+            <button class="tip-btn" data-tip="0.40">40% ($0.00)</button>
+            <button class="tip-btn" data-tip="1.00">100% ($0.00)</button>
+            <button class="tip-btn" data-tip="custom">Custom</button>
+          </div>
+          <div id="customTipRow" class="custom-tip hidden">
+            <label><span>$</span><input id="customTip" type="number" min="0" step="0.01" value="0.00"></label>
+          </div>
+          <p class="tip-amount-line">Tip amount: <strong id="tipAmount">$0.00</strong></p>
+        </section>
+      </div>
+      <!-- Totals summary -->
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+        <div class="row" id="deliveryFeeRow" hidden><span>Delivery fee</span><strong id="deliveryFee">$0.00</strong></div>
+        <div class="row"><span>Service &amp; tax</span><strong id="feesTax">$0.00</strong></div>
+        <div class="row"><span>Tip</span><strong id="tipTotal">$0.00</strong></div>
+        <div class="row grand"><span>Total</span><strong id="grandTotal">$0.00</strong></div>
+      </div>
+      <!-- Payment section -->
+      <section id="paymentBlock" class="payment">
+        <div id="applePayWrap" class="applepay-wrap hidden"></div>
+        <div id="cardElement" class="card-element"></div>
+        <button id="payBtn" class="btn-primary">Pay &amp; place order</button>
+      </section>
+      <p id="checkoutStatus" class="status" role="status" aria-live="polite"></p>
+    </aside>
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://js.stripe.com/v3"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Analytics client for page views and custom events -->
+  <script src="analytics-client.js"></script>
+  <!-- Core application script -->
+  <script src="script.js"></script>
+</body>
+</html>
