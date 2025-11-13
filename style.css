@@ -509,12 +509,19 @@ body {
     width: 100%;
   }
 
-  /* Keep the header visible at the top when scrolling */
+  /* On small screens keep the header visible at the top when scrolling */
   .header {
     position: sticky;
     top: 0;
     z-index: 1002;
   }
+
+  /* NEW: when user is in mobile checkout, hide header to free space */
+  body.mobile-checkout-active .header {
+    display: none;
+  }
+
+
 
   /* Stack header content vertically so nothing hangs off-screen */
   .header-inner {
