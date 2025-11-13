@@ -37,35 +37,35 @@ const mains = [
     name: 'Beef Patties',
     price: 3.0,
     description: 'Crispy golden beef patties with a flaky crust.',
-    image: 'https://source.unsplash.com/featured/?beef-patties,empanada',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'chicken_wings',
     name: 'Chicken Wings',
     price: 16.0,
     description: 'Crisp fried wings tossed in your choice of sauce.',
-    image: 'https://source.unsplash.com/featured/?chicken-wings',
+    image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
   {
     id: 'chicken_quarter',
     name: 'Chicken Quarter Legs',
     price: 16.0,
     description: 'Marinated and grilled chicken quarter legs.',
-    image: 'https://source.unsplash.com/featured/?grilled-chicken',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'snapper',
     name: 'Snapper Fish',
     price: 26.0,
     description: 'Whole snapper lightly seasoned and fried to perfection.',
-    image: '/pictures/snapperFish.jpeg',
+    image: '/pictures/snapper.gif',
   },
   {
     id: 'tilapia',
     name: 'Tilapia (w/ Head)',
     price: 26.0,
     description: 'Whole tilapia served with head, seasoned and roasted.',
-    image: 'https://source.unsplash.com/featured/?tilapia',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'salmon',
@@ -79,14 +79,14 @@ const mains = [
     name: 'Chicken Kabobs',
     price: 16.0,
     description: 'Skewered chicken with peppers and onions.',
-    image: 'https://source.unsplash.com/featured/?chicken-kebab',
+    image: '/pictures/chickenKabobs.jpeg',  // <= UPDATED,
   },
   {
     id: 'beef_kabobs',
     name: 'Beef Kabobs',
     price: 16.0,
     description: 'Tender beef kabobs seasoned and grilled.',
-    image: 'https://source.unsplash.com/featured/?beef-kebab',
+    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
   },
   {
     id: 'shrimp_kabobs',
@@ -106,7 +106,7 @@ const sides = [
     name: 'Jollof Rice',
     price: 6.5,
     description: 'West African seasoned rice cooked in a rich tomato sauce.',
-    image: 'https://source.unsplash.com/featured/?jollof-rice',
+    image: '/pictures/jollofRice.gif',
   },
   {
     id: 'mac_cheese',
@@ -127,14 +127,14 @@ const sides = [
     name: 'Cassava Leaf',
     price: 16.0,
     description: 'Traditional Liberian stew made with cassava leaves.',
-    image: 'https://source.unsplash.com/featured/?cassava-leaves',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'potato_greens',
     name: 'Potato Greens & White Rice',
     price: 6.5,
     description: 'Savory potato greens served with fluffy white rice.',
-    image: 'https://source.unsplash.com/featured/?potato-greens',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   // Additional sides consisting of single pieces priced at $3.50 each
   {
@@ -142,28 +142,28 @@ const sides = [
     name: 'Chicken Wing (1 piece)',
     price: 3.5,
     description: 'A single chicken wing as a tasty side.',
-    image: 'https://source.unsplash.com/featured/?single-chicken-wing',
+    image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
   {
     id: 'side_chicken_kabob',
     name: 'Chicken Kabob (1 piece)',
     price: 3.5,
     description: 'One skewer of chicken kabob as a side.',
-    image: 'https://source.unsplash.com/featured/?single-chicken-kebab',
+    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
   },
   {
     id: 'side_beef_kabob',
     name: 'Beef Kabob (1 piece)',
     price: 3.5,
     description: 'One skewer of beef kabob as a side.',
-    image: 'https://source.unsplash.com/featured/?single-beef-kebab',
+    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
   },
   {
     id: 'side_shrimp_kabob',
     name: 'Shrimp Kabob (1 piece)',
     price: 3.5,
     description: 'One skewer of shrimp kabob as a side.',
-    image: 'https://source.unsplash.com/featured/?single-shrimp-kebab',
+    image: '/pictures/shrimpKabobs.jpeg',
   },
 ];
 
