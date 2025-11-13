@@ -1230,8 +1230,10 @@ function initEventListeners() {
 const viewCartBtn = document.getElementById('viewCartBtn');
 if (viewCartBtn) {
   viewCartBtn.addEventListener('click', () => {
-    // If we are in mobile checkout mode, treat this as "Continue shopping"
-    if (inMobileCheckout && window.innerWidth <= 600) {
+    const isMobile = window.innerWidth <= 600;
+
+    // 1) If we are in mobile CHECKOUT mode, treat this as "Continue shopping"
+    if (inMobileCheckout && isMobile) {
       const overlay = document.getElementById('checkoutOverlay');
       if (overlay) {
         overlay.classList.remove('show');
@@ -1247,7 +1249,16 @@ if (viewCartBtn) {
       return;
     }
 
-    // Normal desktop / non-checkout behaviour: open the cart drawer
+    // 2) If the CART DRAWER is already open on mobile,
+    //    use this as "Continue shopping" (close + scroll to menu).
+    const cartPanel = document.getElementById('cartPanel');
+    if (isMobile && cartPanel && cartPanel.classList.contains('open')) {
+      // closeCart(true) will also restore the "Cart (n)" label
+      closeCart(true);
+      return;
+    }
+
+    // 3) Normal behaviour: open the cart drawer
     if (cart.length === 0) {
       alert('Your cart is empty. Please add items.');
     } else {
@@ -1255,6 +1266,7 @@ if (viewCartBtn) {
     }
   });
 }
+
 
   document.getElementById('closeCart').addEventListener('click', closeCart);
 
