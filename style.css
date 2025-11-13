@@ -41,6 +41,38 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-logo {
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* For smaller phones, shrink the logo a bit */
+@media (max-width: 480px) {
+  .site-logo {
+    height: 40px;
+  }
+
+  .site-title {
+    font-size: 1.3rem;
+  }
+}
+
+
 .site-title {
   margin: 0;
   font-size: 1.8rem;
@@ -513,4 +545,66 @@ body {
     width: 100%;
     margin-bottom: 12px;
   }
+}
+
+/* When splash is visible, hide the app content and lock scroll */
+body.show-splash .app-content {
+  display: none;
+}
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.splash-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.splash-inner {
+  text-align: center;
+}
+
+.splash-logo {
+  width: 160px;
+  max-width: 60vw;
+  animation: splash-pulse 1.5s ease-in-out infinite;
+}
+
+.splash-text {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Pulsing logo */
+@keyframes splash-pulse {
+  0%   { transform: scale(1);   opacity: 0.95; }
+  50%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1);   opacity: 0.95; }
+}
+
+.apple-pay-btn {
+  background: #000000;
+  color: #ffffff;
+  border-radius: 999px;
+  width: 100%;
+  padding: 10px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.apple-pay-btn:hover {
+  filter: brightness(1.1);
 }
