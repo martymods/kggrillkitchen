@@ -1188,9 +1188,19 @@ function initEventListeners() {
   const continueBtn = document.getElementById('continueShoppingBtn');
   if (continueBtn) {
     continueBtn.addEventListener('click', () => {
+      // Close the cart panel
       closeCart();
+
+      // Scroll back to the menu so user can add more items
+      const menuTop =
+        document.getElementById('menuTop') ||
+        document.getElementById('main-menu') ||
+        document.body;
+
+      menuTop.scrollIntoView({ behavior: 'smooth' });
     });
   }
+
   // Radio change
   document.querySelectorAll('input[name="orderType"]').forEach(radio => {
     radio.addEventListener('change', updateOrderType);
