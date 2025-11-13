@@ -958,11 +958,14 @@ async function handleOrderSuccess(paymentIntentId) {
   const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
 
   const totals = computeTotals();
+  // totals: { subtotal, fees, deliveryFee, tip, grand }
 
-  // Build Telegram-friendly order (amount in cents, include items)
+  // Build Telegram-friendly order (all money in cents)
   const telegramOrder = {
     event: 'paid',
-    amount: Math.round(totals.grand * 100), // cents
+    // original "amount" field (total in cents)
+    amount: Math.round(totals.grand * 100),
+
     name,
     phone,
     address: {
@@ -970,6 +973,23 @@ async function handleOrderSuccess(paymentIntentId) {
       city: '',
       postal_code: ''
     },
+
+    // Detailed breakdown (all cents)
+    subtotal: Math.round(totals.subtotal * 100),
+    deliveryFee: Math.round((totals.deliveryFee || 0) * 100),
+    fees: Math.round((totals.fees || 0) * 100),
+    tip: Math.round((totals.tip || 0) * 100),
+    total: Math.round(totals.grand * 100),
+
+    // Prefer `items` on backend, but keep `cart` for backward compatibility
+    items: cart.map(i => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      unitPrice: Math.round(i.price * 100), // cents
+      sauce: i.sauce || null,
+      freeSide: i.freeSide || null
+    })),
     cart: cart.map(i => ({
       name: i.name,
       quantity: i.quantity,
@@ -977,6 +997,7 @@ async function handleOrderSuccess(paymentIntentId) {
       sauce: i.sauce || null,
       freeSide: i.freeSide || null
     })),
+
     fulfilment,
     paymentIntentId
   };
