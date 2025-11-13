@@ -93,13 +93,22 @@
       <label for="customerPhone">Phone number</label>
       <input type="tel" id="customerPhone" name="phone" autocomplete="tel" required>
       <!-- Payment UI -->
-      <fieldset id="paymentFieldset" class="payment-fieldset">
-        <legend>Payment</legend>
-        <div id="payment-request-button" hidden></div>
-        <div id="payment-request-button" style="display:none;margin-bottom:10px;"></div>
-        <div id="card-element" class="card-element"></div>
-        <div id="payment-message" class="payment-message" role="alert" hidden></div>
-      </fieldset>
+<fieldset id="paymentFieldset" class="payment-fieldset">
+  <legend>Payment</legend>
+
+  <!-- Optional: old in-page wallets (PaymentRequestButton). You can keep or remove this. -->
+  <div id="payment-request-button" style="display:none;margin-bottom:10px;"></div>
+
+  <!-- New: Stripe Checkout (Apple Pay / wallets) button -->
+  <button type="button" id="stripeCheckoutBtn" class="place-order-btn" style="margin-bottom:10px;">
+    Express checkout (Apple&nbsp;Pay / wallets)
+  </button>
+
+  <!-- Standard card element (on-page payment) -->
+  <div id="card-element" class="card-element"></div>
+  <div id="payment-message" class="payment-message" role="alert" hidden></div>
+</fieldset>
+
       <!-- Tip selection (shown only for delivery) -->
       <section id="tipSection" class="tip-section" hidden>
         <h4>Tip your driver</h4>
