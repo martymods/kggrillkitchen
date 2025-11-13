@@ -1097,33 +1097,60 @@ function initEventListeners() {
     radio.addEventListener('change', updateOrderType);
   });
   // Checkout open
-  document.getElementById('checkoutButton').addEventListener('click', () => {
-    if (cart.length === 0) {
-      alert('Please add items to your cart before proceeding to checkout.');
-      return;
-    }
-    // Notify backend via Telegram when user initiates checkout
-    try {
-      const subtotalPreview = cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
-      const feesPreview = subtotalPreview * 0.1;
-      const totalPreview = subtotalPreview + (deliveryFee || 0) + feesPreview + (currentTipAmount || 0);
-      const previewOrder = {
-        event: 'checkout_initiated',
-        items: cart.map(item => ({ id: item.id, quantity: item.quantity, sauce: item.sauce || null, freeSide: item.freeSide || null })),
-        total: totalPreview,
-        tip: currentTipAmount || 0,
-      };
-      fetch(api('/telegram-notify'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(previewOrder),
-      });
-    } catch (err) {
-      console.warn('Failed to send checkout notification', err);
-    }
-    document.getElementById('checkoutOverlay').classList.add('show');
-    document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'false');
-  });
+document.getElementById('checkoutButton').addEventListener('click', () => {
+  if (cart.length === 0) {
+    alert('Please add items to your cart before proceeding to checkout.');
+    return;
+  }
+
+  // Notify backend via Telegram when user initiates checkout
+  try {
+    const subtotalPreview = cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const feesPreview = subtotalPreview * 0.1;
+    const totalPreview =
+      subtotalPreview +
+      (deliveryFee || 0) +
+      feesPreview +
+      (currentTipAmount || 0);
+
+    // Grab whatever customer info we already have (may be empty at this point)
+    const name = (document.getElementById('customerName')?.value || '').trim();
+    const phone = (document.getElementById('customerPhone')?.value || '').trim();
+    const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
+
+    // Build the payload using the field names /telegram-notify expects
+    const previewOrder = {
+      event: 'checkout_initiated',
+      amount: Math.round(totalPreview * 100), // cents
+      name,
+      phone,
+      address: {
+        line1,
+        city: '',
+        postal_code: ''
+      },
+      cart: cart.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: Math.round(item.price * 100),
+        sauce: item.sauce || null,
+        freeSide: item.freeSide || null,
+      })),
+    };
+
+    fetch(api('/telegram-notify'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(previewOrder),
+    });
+  } catch (err) {
+    console.warn('Failed to send checkout notification', err);
+  }
+
+  document.getElementById('checkoutOverlay').classList.add('show');
+  document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'false');
+});
+
   // Overlay click to dismiss
   document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'checkoutOverlay') {
