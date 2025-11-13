@@ -615,6 +615,7 @@ function loadSavedDetails() {
   const phoneSaved = localStorage.getItem('kg_phone');
   const addressSaved = localStorage.getItem('kg_address');
   const orderTypeSaved = localStorage.getItem('kg_orderType');
+
   if (nameSaved) {
     document.getElementById('customerName').value = nameSaved;
   }
@@ -628,7 +629,14 @@ function loadSavedDetails() {
     const radio = document.querySelector(`input[name="orderType"][value="${orderTypeSaved}"]`);
     if (radio) radio.checked = true;
   }
+
+  // If the saved preference is delivery and we have an address,
+  // forward-geocode it so the map + delivery fee are ready.
+  if (orderTypeSaved === 'delivery' && addressSaved) {
+    geocodeAddressAndUpdate(addressSaved);
+  }
 }
+
 
 /**
  * Get the user's current location and reverse geocode it to prefill the
@@ -742,6 +750,37 @@ function updateOrderType() {
   saveField('kg_orderType', orderType);
   // Update tip UI when order type changes
   updateTipSection();
+}
+
+/**
+ * Forward-geocode a typed/saved address string, update userCoords, show map,
+ * and recalculate delivery fee + totals.
+ */
+async function geocodeAddressAndUpdate(addressString) {
+  const addr = (addressString || '').trim();
+  if (!addr) return;
+
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addr)}`
+    );
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const first = data[0];
+      const lat = parseFloat(first.lat);
+      const lon = parseFloat(first.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        userCoords = { lat, lon };
+        showMapAndDistance();
+      } else {
+        console.warn('Geocode result missing lat/lon', first);
+      }
+    } else {
+      console.warn('No geocode result for address:', addr);
+    }
+  } catch (err) {
+    console.error('Forward geocoding failed', err);
+  }
 }
 
 
@@ -1200,10 +1239,28 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
       document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
     }
   });
-  // Persist user input
-  document.getElementById('customerName').addEventListener('input', e => saveField('kg_name', e.target.value));
-  document.getElementById('customerPhone').addEventListener('input', e => saveField('kg_phone', e.target.value));
-  document.getElementById('deliveryAddress').addEventListener('input', e => saveField('kg_address', e.target.value));
+// Persist user input
+document.getElementById('customerName').addEventListener('input', e => saveField('kg_name', e.target.value));
+document.getElementById('customerPhone').addEventListener('input', e => saveField('kg_phone', e.target.value));
+
+const deliveryAddressInput = document.getElementById('deliveryAddress');
+if (deliveryAddressInput) {
+  // Save as they type
+  deliveryAddressInput.addEventListener('input', e => {
+    saveField('kg_address', e.target.value);
+  });
+
+  // When they finish editing (blur), geocode for delivery orders
+  deliveryAddressInput.addEventListener('blur', e => {
+    const value = e.target.value.trim();
+    saveField('kg_address', value);
+    const orderType =
+      document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+    if (orderType === 'delivery' && value) {
+      geocodeAddressAndUpdate(value);
+    }
+  });
+}
 
   // Tip buttons
   document.querySelectorAll('.tip-button[data-tip-percent]').forEach(btn => {
