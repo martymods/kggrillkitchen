@@ -774,34 +774,34 @@ async function initStripe() {
       // Ensure we have a client secret
       const clientSecret = await createPaymentIntent();
       if (!clientSecret) throw new Error('Could not create PaymentIntent');
+
       // Confirm the payment using the wallet payment method
-      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: ev.paymentMethod.id,
-        shipping: {
-          name: document.getElementById('customerName').value,
-          phone: document.getElementById('customerPhone').value,
-          address: {
-            line1: document.getElementById('deliveryAddress').value || '',
-            city: '',
-            state: '',
-            postal_code: '',
-            country: 'US',
-          },
+      const result = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: ev.paymentMethod.id,
         },
-        receipt_email: null,
-      }, { handleActions: false });
-      if (error) {
+        { handleActions: false }
+      );
+
+      if (result.error) {
         ev.complete('fail');
-        displayPaymentMessage(error.message || 'Payment failed');
+        displayPaymentMessage(result.error.message || 'Payment failed');
       } else {
         ev.complete('success');
-        handleOrderSuccess(paymentIntent.id);
+        const paymentIntent = result.paymentIntent;
+        if (paymentIntent && paymentIntent.id) {
+          handleOrderSuccess(paymentIntent.id);
+        } else {
+          handleOrderSuccess('');
+        }
       }
     } catch (err) {
       ev.complete('fail');
       displayPaymentMessage(err.message || 'Payment error');
     }
   });
+
   // Mount the PaymentRequestButton only if the wallet can make payments. This
   // prevents an integration error from Stripe. The canMakePayment() call
   // returns a promise that resolves to a payment method result or null.
@@ -1076,9 +1076,11 @@ function initEventListeners() {
     });
   }
   // Form submission (card payment)
+  // Form submission (card payment)
   document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     clearPaymentMessage();
+
     // Basic form validation
     const name = document.getElementById('customerName').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
@@ -1087,10 +1089,12 @@ function initEventListeners() {
       displayPaymentMessage('Please fill out all required fields.');
       return;
     }
+
     // Create PaymentIntent if not already done
     const clientSecret = await createPaymentIntent();
     if (!clientSecret) return;
-    // Confirm payment with card element
+
+    // Confirm payment with card element (no shipping here – it’s set on the backend)
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
         card: cardElement,
@@ -1099,21 +1103,15 @@ function initEventListeners() {
           phone,
         },
       },
-      shipping: orderType === 'delivery' ? {
-        name,
-        phone,
-        address: {
-          line1: document.getElementById('deliveryAddress').value,
-          country: 'US',
-        },
-      } : undefined,
     });
+
     if (error) {
       displayPaymentMessage(error.message || 'Payment failed');
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       handleOrderSuccess(paymentIntent.id);
     }
   });
+
 }
 
 // Entry point
