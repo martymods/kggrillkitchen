@@ -577,19 +577,55 @@ function updateTipSection() {
 
 /**
  * Open the cart panel.
+ * On mobile, change the header Cart button to "Continue shopping"
+ * so the user can tap it to go back to the menu.
  */
 function openCart() {
-  document.getElementById('cartPanel').classList.add('open');
-  document.getElementById('cartPanel').setAttribute('aria-hidden', 'false');
+  const cartPanel = document.getElementById('cartPanel');
+  cartPanel.classList.add('open');
+  cartPanel.setAttribute('aria-hidden', 'false');
+
+  const isMobile = window.matchMedia('(max-width: 600px)').matches;
+  const headerCartBtn = document.getElementById('viewCartBtn');
+
+  if (isMobile && headerCartBtn) {
+    // Remember original label once
+    if (!headerCartBtn.dataset.originalLabel) {
+      headerCartBtn.dataset.originalLabel = headerCartBtn.textContent;
+    }
+    headerCartBtn.textContent = 'Continue shopping';
+  }
 }
+
 
 /**
  * Close the cart panel.
+ * On mobile, restore the header Cart button text and scroll back to the menu.
  */
-function closeCart() {
-  document.getElementById('cartPanel').classList.remove('open');
-  document.getElementById('cartPanel').setAttribute('aria-hidden', 'true');
+function closeCart(scrollToMenu = false) {
+  const cartPanel = document.getElementById('cartPanel');
+  cartPanel.classList.remove('open');
+  cartPanel.setAttribute('aria-hidden', 'true');
+
+  const isMobile = window.matchMedia('(max-width: 600px)').matches;
+  const headerCartBtn = document.getElementById('viewCartBtn');
+
+  if (headerCartBtn) {
+    const original = headerCartBtn.dataset.originalLabel || `Cart (0)`;
+    headerCartBtn.textContent = original;
+    // Always keep the count correct
+    updateCartButton();
+  }
+
+  if (isMobile && scrollToMenu) {
+    const menuTop =
+      document.getElementById('main-menu') ||
+      document.getElementById('menuTop') ||
+      document.body;
+    menuTop.scrollIntoView({ behavior: 'smooth' });
+  }
 }
+
 
 /**
  * Update the cart button label with the total quantity of items.
@@ -1244,8 +1280,6 @@ if (viewCartBtn) {
     radio.addEventListener('change', updateOrderType);
   });
 
-
-
 // Overlay click to dismiss
 document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'checkoutOverlay') {
@@ -1258,7 +1292,6 @@ document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
     }
   }
 });
-
   
 // Checkout open
 document.getElementById('checkoutButton').addEventListener('click', () => {
@@ -1326,7 +1359,6 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
   }
 });
 
-  
   // Persist user input (null-safe)
   const nameInput = document.getElementById('customerName');
   if (nameInput) {
