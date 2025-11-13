@@ -757,32 +757,50 @@ function updateOrderType() {
  * and recalculate delivery fee + totals.
  */
 async function geocodeAddressAndUpdate(addressString) {
-  const addr = (addressString || '').trim();
-  if (!addr) return;
+  // Normalize/boost address for Philly area
+  let query = (addressString || '').trim();
+  if (!query) return;
+
+  // Turn "phila" into "Philadelphia"
+  if (/phila\b/i.test(query) && !/philadelphia\b/i.test(query)) {
+    query = query.replace(/phila\b/i, 'Philadelphia');
+  }
+
+  // Ensure "Philadelphia, PA" appears at least once
+  if (!/philadelphia/i.test(query)) {
+    if (query.length) query += ', ';
+    query += 'Philadelphia, PA';
+  }
+
+  // Make sure there's a country for better results
+  if (!/usa|united states/i.test(query)) {
+    query += ', USA';
+  }
 
   try {
     const resp = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addr)}`
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}`
     );
     const data = await resp.json();
+
     if (Array.isArray(data) && data.length > 0) {
       const first = data[0];
       const lat = parseFloat(first.lat);
       const lon = parseFloat(first.lon);
+
       if (Number.isFinite(lat) && Number.isFinite(lon)) {
         userCoords = { lat, lon };
-        showMapAndDistance();
+        showMapAndDistance(); // this will update the map + delivery fee
       } else {
         console.warn('Geocode result missing lat/lon', first);
       }
     } else {
-      console.warn('No geocode result for address:', addr);
+      console.warn('No geocode result for address:', query);
     }
   } catch (err) {
     console.error('Forward geocoding failed', err);
   }
 }
-
 
 /**
  * Initialise Stripe and payment elements. Attempts to fetch a publishable key
@@ -1239,28 +1257,45 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
       document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
     }
   });
-// Persist user input
-document.getElementById('customerName').addEventListener('input', e => saveField('kg_name', e.target.value));
-document.getElementById('customerPhone').addEventListener('input', e => saveField('kg_phone', e.target.value));
+  
 
-const deliveryAddressInput = document.getElementById('deliveryAddress');
-if (deliveryAddressInput) {
-  // Save as they type
-  deliveryAddressInput.addEventListener('input', e => {
-    saveField('kg_address', e.target.value);
-  });
+  // Persist user input (null-safe)
+  const nameInput = document.getElementById('customerName');
+  if (nameInput) {
+    nameInput.addEventListener('input', e => {
+      saveField('kg_name', e.target.value);
+    });
+  }
 
-  // When they finish editing (blur), geocode for delivery orders
-  deliveryAddressInput.addEventListener('blur', e => {
-    const value = e.target.value.trim();
-    saveField('kg_address', value);
-    const orderType =
-      document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-    if (orderType === 'delivery' && value) {
-      geocodeAddressAndUpdate(value);
-    }
-  });
-}
+  const phoneInput = document.getElementById('customerPhone');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', e => {
+      saveField('kg_phone', e.target.value);
+    });
+  }
+
+  // Delivery address: manual entry overrides geo, and is saved
+  const deliveryAddressInput = document.getElementById('deliveryAddress');
+  if (deliveryAddressInput) {
+    // Save as they type
+    deliveryAddressInput.addEventListener('input', e => {
+      saveField('kg_address', e.target.value);
+    });
+
+    // When they finish editing, geocode for delivery orders
+    deliveryAddressInput.addEventListener('blur', e => {
+      const value = e.target.value.trim();
+      saveField('kg_address', value);
+
+      const orderType =
+        document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+
+      if (orderType === 'delivery' && value) {
+        geocodeAddressAndUpdate(value);
+      }
+    });
+  }
+
 
   // Tip buttons
   document.querySelectorAll('.tip-button[data-tip-percent]').forEach(btn => {
