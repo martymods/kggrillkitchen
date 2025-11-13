@@ -33,11 +33,7 @@ body {
 /* Header styles */
 .header {
   background: var(--light-bg);
-  padding: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid #ddd;
 }
 
@@ -46,12 +42,14 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap; /* allow wrapping on smaller screens */
 }
 
 .brand-block {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .site-logo {
@@ -72,20 +70,23 @@ body {
   }
 }
 
-
 .site-title {
   margin: 0;
   font-size: 1.8rem;
   color: var(--accent);
+  white-space: nowrap;
 }
 
 /* Order type selector */
 .order-type {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
   font-size: 0.9rem;
+}
+.order-type-label {
+  white-space: nowrap;
 }
 .order-type label {
   display: flex;
@@ -106,10 +107,12 @@ body {
   border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 1rem;
+  white-space: nowrap;
 }
 .view-cart-btn:hover {
   background: var(--accent-hover);
 }
+
 
 /* Main content container */
 .container {
@@ -506,13 +509,35 @@ body {
     width: 100%;
   }
 
-  /* On small screens keep the header visible at the top when scrolling */
+  /* Keep the header visible at the top when scrolling */
   .header {
     position: sticky;
     top: 0;
     z-index: 1002;
   }
+
+  /* Stack header content vertically so nothing hangs off-screen */
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .brand-block {
+    justify-content: flex-start;
+  }
+
+  .order-type {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .view-cart-btn {
+    width: 100%;
+    text-align: center;
+  }
 }
+
 
 /* Hide the default Leaflet attribution to keep the map clean */
 .leaflet-control-attribution {
