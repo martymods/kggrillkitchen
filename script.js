@@ -1404,6 +1404,16 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
 
 // Entry point
 document.addEventListener('DOMContentLoaded', async () => {
+  // Start splash timer – show for ~2 seconds
+  const splash = document.getElementById('splashScreen');
+  setTimeout(() => {
+    if (splash) {
+      splash.classList.add('hidden');        // triggers CSS fade-out
+    }
+    document.body.classList.remove('show-splash'); // reveals app-content
+  }, 2000);
+
+  // Normal app init
   renderMenu();
   loadSavedDetails();
   updateOrderType();
