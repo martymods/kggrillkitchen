@@ -200,6 +200,8 @@ const cart = [];
 const restaurantCoords = { lat: 39.9526, lon: -75.1652 };
 let userCoords = null;
 let deliveryFee = 0;
+let inMobileCheckout = false;
+
 
 // Tip state. When delivery is selected, customers can optionally leave a tip. The
 // tip can be a percentage (e.g. 0.15 for 15%) or a custom flat amount. The
@@ -1077,11 +1079,25 @@ async function handleOrderSuccess(paymentIntentId) {
   updateCartButton();
   closeCart();
 
-  document.getElementById('checkoutOverlay').classList.remove('show');
-  document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
+  const overlay = document.getElementById('checkoutOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
 
   currentClientSecret = null;
   clearPaymentMessage();
+
+  // NEW: make sure mobile checkout visuals are reset
+  resetMobileCheckoutHeader();
+}
+
+
+function resetMobileCheckoutHeader() {
+  inMobileCheckout = false;
+  document.body.classList.remove('mobile-checkout-active');
+  // Put the Cart button text back to normal
+  updateCartButton();
 }
 
 
@@ -1174,14 +1190,36 @@ function initEventListeners() {
 
 
   
-  // Cart open/close
-  document.getElementById('viewCartBtn').addEventListener('click', () => {
+// Cart open/close + "Continue shopping" on mobile checkout
+const viewCartBtn = document.getElementById('viewCartBtn');
+if (viewCartBtn) {
+  viewCartBtn.addEventListener('click', () => {
+    // If we are in mobile checkout mode, treat this as "Continue shopping"
+    if (inMobileCheckout && window.innerWidth <= 600) {
+      const overlay = document.getElementById('checkoutOverlay');
+      if (overlay) {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+
+      // Restore header + Cart text
+      resetMobileCheckoutHeader();
+
+      // Scroll back to the menu so user can add more items
+      const menuTop = document.getElementById('main-menu') || document.body;
+      menuTop.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    // Normal desktop / non-checkout behaviour: open the cart drawer
     if (cart.length === 0) {
       alert('Your cart is empty. Please add items.');
     } else {
       openCart();
     }
   });
+}
+
   document.getElementById('closeCart').addEventListener('click', closeCart);
 
   // Continue shopping hides the cart panel but retains contents
@@ -1205,7 +1243,24 @@ function initEventListeners() {
   document.querySelectorAll('input[name="orderType"]').forEach(radio => {
     radio.addEventListener('change', updateOrderType);
   });
-  // Checkout open
+
+
+
+// Overlay click to dismiss
+document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'checkoutOverlay') {
+    document.getElementById('checkoutOverlay').classList.remove('show');
+    document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
+
+    // If we were in mobile checkout, restore header + Cart
+    if (window.innerWidth <= 600) {
+      resetMobileCheckoutHeader();
+    }
+  }
+});
+
+  
+// Checkout open
 document.getElementById('checkoutButton').addEventListener('click', () => {
   if (cart.length === 0) {
     alert('Please add items to your cart before proceeding to checkout.');
@@ -1222,12 +1277,10 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
       feesPreview +
       (currentTipAmount || 0);
 
-    // Grab whatever customer info we already have (may be empty at this point)
     const name = (document.getElementById('customerName')?.value || '').trim();
     const phone = (document.getElementById('customerPhone')?.value || '').trim();
     const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
 
-    // Build the payload using the field names /telegram-notify expects
     const previewOrder = {
       event: 'checkout_initiated',
       amount: Math.round(totalPreview * 100), // cents
@@ -1256,19 +1309,24 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
     console.warn('Failed to send checkout notification', err);
   }
 
+  // Show checkout overlay
   document.getElementById('checkoutOverlay').classList.add('show');
   document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'false');
+
+  // 🔹 MOBILE-ONLY BEHAVIOUR
+  if (window.innerWidth <= 600) {
+    inMobileCheckout = true;
+    document.body.classList.add('mobile-checkout-active');
+
+    // Change Cart button text to "Continue shopping"
+    const headerCartBtn = document.getElementById('viewCartBtn');
+    if (headerCartBtn) {
+      headerCartBtn.textContent = 'Continue shopping';
+    }
+  }
 });
 
-  // Overlay click to dismiss
-  document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
-    if (e.target.id === 'checkoutOverlay') {
-      document.getElementById('checkoutOverlay').classList.remove('show');
-      document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
-    }
-  });
   
-
   // Persist user input (null-safe)
   const nameInput = document.getElementById('customerName');
   if (nameInput) {
