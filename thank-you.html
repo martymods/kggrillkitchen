@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thank You – KG Grill Kitchen</title>
+  <style>
+    :root {
+      --kg-green: #09a450;
+      --kg-dark: #065c2c;
+      --kg-light: #f7fff8;
+      --kg-accent: #1f8a44;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--kg-light);
+      color: var(--kg-dark);
+      padding: 24px;
+    }
+    h1 {
+      margin-top: 0;
+      color: var(--kg-dark);
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .summary { margin-top: 16px; }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e1e7e1;
+    }
+    .totals {
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 1px solid #cce5d1;
+    }
+    .totals div {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .total {
+      font-weight: bold;
+    }
+    a.home {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      text-decoration: none;
+      color: var(--kg-green);
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Thank you for your order!</h1>
+    <p>We’ve received your order and are preparing it now. Here’s a summary:</p>
+    <div id="orderSummary" class="summary"></div>
+    <a href="index.html" class="home">Return to home</a>
+  </div>
+
+  <script>
+    function formatMoney(num) {
+      return '$' + (Number(num) / 100).toFixed(2);
+    }
+
+    function loadSummary() {
+      try {
+        const raw = localStorage.getItem('kgLastOrderSummary');
+        if (!raw) return;
+
+        const order = JSON.parse(raw);
+        const sumDiv = document.getElementById('orderSummary');
+
+        // Render items
+        if (Array.isArray(order.items)) {
+          order.items.forEach(function (item) {
+            const row = document.createElement('div');
+            row.className = 'item';
+            row.innerHTML =
+              '<span>' +
+              item.quantity +
+              '× ' +
+              item.name +
+              '</span><span>' +
+              formatMoney(item.total) +
+              '</span>';
+            sumDiv.appendChild(row);
+          });
+        }
+
+        // Render totals
+        const totals = document.createElement('div');
+        totals.className = 'totals';
+        totals.innerHTML =
+          '<div><span>Subtotal</span><span>' +
+          formatMoney(order.subtotal) +
+          '</span></div>' +
+          '<div><span>Delivery fee</span><span>' +
+          formatMoney(order.deliveryFee) +
+          '</span></div>' +
+          '<div><span>Service &amp; tax</span><span>' +
+          formatMoney(order.feesAndEstimatedTax) +
+          '</span></div>' +
+          '<div><span>Tip</span><span>' +
+          formatMoney(order.tipAmount) +
+          '</span></div>' +
+          '<div class="total"><span>Total Paid</span><span>' +
+          formatMoney(order.grandTotal) +
+          '</span></div>';
+
+        sumDiv.appendChild(totals);
+
+        // Clear summary so it isn't reused inadvertently
+        localStorage.removeItem('kgLastOrderSummary');
+      } catch (e) {
+        console.warn('Could not load order summary:', e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSummary);
+  </script>
+</body>
+</html>
