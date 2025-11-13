@@ -633,12 +633,24 @@ function loadSavedDetails() {
 /**
  * Get the user's current location and reverse geocode it to prefill the
  * delivery address. On success, also call showMapAndDistance().
+ * IMPORTANT: only runs if the address box is empty so it never overwrites
+ * what the user typed or what we loaded from localStorage.
  */
 async function getLocationAndPrefill() {
+  const addressField = document.getElementById('deliveryAddress');
+  if (!addressField) return;
+
+  // If user already has an address (typed OR loaded from localStorage),
+  // do NOT override it with geolocation.
+  if (addressField.value.trim()) {
+    return;
+  }
+
   if (!navigator.geolocation) {
     console.warn('Geolocation is not supported by this browser.');
     return;
   }
+
   navigator.geolocation.getCurrentPosition(async (pos) => {
     const { latitude, longitude } = pos.coords;
     userCoords = { lat: latitude, lon: longitude };
@@ -647,7 +659,6 @@ async function getLocationAndPrefill() {
       const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
       const data = await resp.json();
       const displayName = data.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-      const addressField = document.getElementById('deliveryAddress');
       addressField.value = displayName;
       saveField('kg_address', displayName);
     } catch (err) {
@@ -658,6 +669,7 @@ async function getLocationAndPrefill() {
     console.warn('Geolocation error:', err);
   });
 }
+
 
 /**
  * Show a Leaflet map connecting the restaurant and customer, compute distance,
@@ -699,30 +711,39 @@ function showMapAndDistance() {
 
 /**
  * Update the delivery fields visibility based on selected order type. When
- * switching to delivery, attempt to prefill address and compute fee.
+ * switching to delivery, attempt to prefill address and compute fee, but
+ * NEVER override a manually-entered or previously-saved address.
  */
 function updateOrderType() {
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
   const deliveryFields = document.getElementById('deliveryFields');
+  const addressEl = document.getElementById('deliveryAddress');
+
   if (orderType === 'delivery') {
     deliveryFields.hidden = false;
-    // Mark address as required
-    document.getElementById('deliveryAddress').required = true;
-    // get location and compute map once
-    getLocationAndPrefill();
+    if (addressEl) addressEl.required = true;
+
+    // Only auto-fill from geolocation if the address is empty
+    if (addressEl && !addressEl.value.trim()) {
+      getLocationAndPrefill();
+    }
   } else {
     deliveryFields.hidden = true;
-    document.getElementById('deliveryAddress').required = false;
+    if (addressEl) {
+      addressEl.required = false;
+    }
     document.getElementById('mapContainer').hidden = true;
     document.getElementById('distanceSummary').textContent = '';
     deliveryFee = 0;
     updateCartTotals();
   }
+
   // Persist selection
   saveField('kg_orderType', orderType);
   // Update tip UI when order type changes
   updateTipSection();
 }
+
 
 /**
  * Initialise Stripe and payment elements. Attempts to fetch a publishable key
