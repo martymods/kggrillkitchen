@@ -1295,15 +1295,15 @@ if (viewCartBtn) {
 // Overlay click to dismiss
 document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'checkoutOverlay') {
-    document.getElementById('checkoutOverlay').classList.remove('show');
-    document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'true');
+    const overlay = document.getElementById('checkoutOverlay');
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
 
-    // If we were in mobile checkout, restore header + Cart
-    if (window.innerWidth <= 600) {
-      resetMobileCheckoutHeader();
-    }
+    // Always restore header + Cart label when leaving checkout
+    resetMobileCheckoutHeader();
   }
 });
+
   
 // Checkout open
 document.getElementById('checkoutButton').addEventListener('click', () => {
@@ -1355,21 +1355,26 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
   }
 
   // Show checkout overlay
-  document.getElementById('checkoutOverlay').classList.add('show');
-  document.getElementById('checkoutOverlay').setAttribute('aria-hidden', 'false');
+  const overlay = document.getElementById('checkoutOverlay');
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden', 'false');
 
-  // 🔹 MOBILE-ONLY BEHAVIOUR
+  // 🔹 MOBILE-ONLY VISUAL BEHAVIOUR
   if (window.innerWidth <= 600) {
     inMobileCheckout = true;
     document.body.classList.add('mobile-checkout-active');
+  }
 
-    // Change Cart button text to "Continue shopping"
-    const headerCartBtn = document.getElementById('viewCartBtn');
-    if (headerCartBtn) {
-      headerCartBtn.textContent = 'Continue shopping';
+  // Cart button should ALWAYS say "Continue shopping" while checkout is open
+  const headerCartBtn = document.getElementById('viewCartBtn');
+  if (headerCartBtn) {
+    if (!headerCartBtn.dataset.originalLabel) {
+      headerCartBtn.dataset.originalLabel = headerCartBtn.textContent;
     }
+    headerCartBtn.textContent = 'Continue shopping';
   }
 });
+
 
   // Persist user input (null-safe)
   const nameInput = document.getElementById('customerName');
