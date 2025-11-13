@@ -754,28 +754,35 @@ async function initStripe() {
     console.error('No Stripe publishable key provided. Payment will be disabled.');
     return;
   }
+
+  // ---- Elements setup ----
   stripe = Stripe(publishableKey);
   elements = stripe.elements();
-  // Mount the card element
+
+  // Card element
   cardElement = elements.create('card');
   cardElement.mount('#card-element');
-  // PaymentRequest for Apple Pay / Google Pay
+
+  // ---- Apple Pay / Google Pay (Payment Request) ----
+  // Start with a zero total; we'll keep it in sync from updateCartTotals().
   paymentRequest = stripe.paymentRequest({
     country: 'US',
     currency: 'usd',
-    total: { label: 'KG Grill Kitchen', amount: 0 },
+    total: { label: 'KG Grill Kitchen', amount: 0 },
     requestPayerName: true,
     requestPayerEmail: true,
     requestPayerPhone: true,
-    requestShipping: true,
+    requestShipping: false, // shipping handled on backend
   });
+
+  // When the wallet (Apple/Google Pay) provides a payment method:
   paymentRequest.on('paymentmethod', async (ev) => {
     try {
-      // Ensure we have a client secret
+      // Ensure we have a PaymentIntent on the backend
       const clientSecret = await createPaymentIntent();
       if (!clientSecret) throw new Error('Could not create PaymentIntent');
 
-      // Confirm the payment using the wallet payment method
+      // Use your requested snippet here:
       const result = await stripe.confirmCardPayment(
         clientSecret,
         {
@@ -787,14 +794,31 @@ async function initStripe() {
       if (result.error) {
         ev.complete('fail');
         displayPaymentMessage(result.error.message || 'Payment failed');
-      } else {
-        ev.complete('success');
-        const paymentIntent = result.paymentIntent;
-        if (paymentIntent && paymentIntent.id) {
-          handleOrderSuccess(paymentIntent.id);
-        } else {
-          handleOrderSuccess('');
+        return;
+      }
+
+      // If additional actions are required (3DS), handle them
+      if (result.paymentIntent && result.paymentIntent.status === 'requires_action') {
+        const next = await stripe.confirmCardPayment(clientSecret);
+        if (next.error) {
+          ev.complete('fail');
+          displayPaymentMessage(next.error.message || 'Payment failed');
+          return;
         }
+        if (next.paymentIntent && next.paymentIntent.status === 'succeeded') {
+          ev.complete('success');
+          await handleOrderSuccess(next.paymentIntent.id);
+          return;
+        }
+      }
+
+      // Normal success path
+      if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        ev.complete('success');
+        await handleOrderSuccess(result.paymentIntent.id);
+      } else {
+        ev.complete('fail');
+        displayPaymentMessage('Payment could not be completed.');
       }
     } catch (err) {
       ev.complete('fail');
@@ -802,25 +826,19 @@ async function initStripe() {
     }
   });
 
-  // Mount the PaymentRequestButton only if the wallet can make payments. This
-  // prevents an integration error from Stripe. The canMakePayment() call
-  // returns a promise that resolves to a payment method result or null.
+  // Mount the Payment Request button only if Apple/Google Pay is available
   try {
     const prButton = elements.create('paymentRequestButton', { paymentRequest });
     paymentRequest.canMakePayment().then(result => {
+      const btnWrapper = document.getElementById('payment-request-button');
+      if (!btnWrapper) return;
       if (result) {
-        const btnWrapper = document.getElementById('payment-request-button');
-        if (btnWrapper) {
-          btnWrapper.hidden = false;
-          prButton.mount('#payment-request-button');
-        }
+        btnWrapper.hidden = false;
+        prButton.mount('#payment-request-button');
       } else {
-        // If Apple/Google Pay is not available, keep the button hidden
-        const btnWrapper = document.getElementById('payment-request-button');
-        if (btnWrapper) btnWrapper.hidden = true;
+        btnWrapper.hidden = true;
       }
     }).catch(() => {
-      // In case of error, hide the button
       const btnWrapper = document.getElementById('payment-request-button');
       if (btnWrapper) btnWrapper.hidden = true;
     });
@@ -828,6 +846,7 @@ async function initStripe() {
     console.warn('Error mounting PaymentRequestButton', error);
   }
 }
+
 
 /**
  * Create a PaymentIntent on the backend with current order details. Returns
@@ -971,6 +990,60 @@ async function handleOrderSuccess(paymentIntentId) {
  * Initialise page event listeners.
  */
 function initEventListeners() {
+
+  /**
+ * Start Stripe Checkout (hosted page with Apple Pay / wallets).
+ * Sends the current cart to the backend and redirects to session.url.
+ */
+async function startStripeCheckout() {
+  if (cart.length === 0) {
+    alert('Your cart is empty. Please add items.');
+    return;
+  }
+
+  const fulfilment =
+    document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+  const totals = computeTotals();
+
+  // Prepare cart in cents for the backend
+  const simplifiedCart = cart.map(i => ({
+    id: i.id,
+    name: i.name,
+    unitPrice: Math.round(i.price * 100), // cents
+    quantity: i.quantity,
+    sauce: i.sauce || null,
+    freeSide: i.freeSide || null,
+  }));
+
+  const payload = {
+    fulfilment,
+    tipCents: Math.round((totals.tip || 0) * 100),
+    cart: simplifiedCart,
+    successUrl: window.location.origin + '/thank-you.html',
+    cancelUrl: window.location.href,
+  };
+
+  try {
+    const resp = await fetch(api('/create-checkout-session'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.url) {
+      throw new Error(data.error || 'Failed to start checkout');
+    }
+
+    // Redirect to Stripe Checkout (this page has Apple Pay button)
+    window.location.href = data.url;
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Unable to start express checkout.');
+  }
+}
+
+  
   // Cart open/close
   document.getElementById('viewCartBtn').addEventListener('click', () => {
     if (cart.length === 0) {
@@ -1075,6 +1148,19 @@ function initEventListeners() {
       updateCartTotals();
     });
   }
+
+    // Express Checkout (Stripe-hosted page with Apple Pay / wallets)
+  const stripeCheckoutBtn = document.getElementById('stripeCheckoutBtn');
+  if (stripeCheckoutBtn) {
+    stripeCheckoutBtn.addEventListener('click', async () => {
+      if (cart.length === 0) {
+        alert('Please add items to your cart before proceeding to checkout.');
+        return;
+      }
+      await startStripeCheckout();
+    });
+  }
+
   // Form submission (card payment)
   // Form submission (card payment)
   document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
