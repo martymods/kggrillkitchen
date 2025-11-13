@@ -991,57 +991,88 @@ async function handleOrderSuccess(paymentIntentId) {
  */
 function initEventListeners() {
 
-  /**
- * Start Stripe Checkout (hosted page with Apple Pay / wallets).
- * Sends the current cart to the backend and redirects to session.url.
- */
-async function startStripeCheckout() {
-  if (cart.length === 0) {
-    alert('Your cart is empty. Please add items.');
-    return;
-  }
-
-  const fulfilment =
-    document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  const totals = computeTotals();
-
-  // Prepare cart in cents for the backend
-  const simplifiedCart = cart.map(i => ({
-    id: i.id,
-    name: i.name,
-    unitPrice: Math.round(i.price * 100), // cents
-    quantity: i.quantity,
-    sauce: i.sauce || null,
-    freeSide: i.freeSide || null,
-  }));
-
-  const payload = {
-    fulfilment,
-    tipCents: Math.round((totals.tip || 0) * 100),
-    cart: simplifiedCart,
-    successUrl: window.location.origin + '/thank-you.html',
-    cancelUrl: window.location.href,
-  };
-
-  try {
-    const resp = await fetch(api('/create-checkout-session'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await resp.json();
-    if (!resp.ok || !data.url) {
-      throw new Error(data.error || 'Failed to start checkout');
+   /**
+   * Start Stripe Checkout (hosted page with Apple Pay / wallets).
+   * Sends the current cart (including fees, delivery, and tip) to the backend
+   * and redirects to session.url.
+   */
+  async function startStripeCheckout() {
+    if (cart.length === 0) {
+      alert('Your cart is empty. Please add items.');
+      return;
     }
 
-    // Redirect to Stripe Checkout (this page has Apple Pay button)
-    window.location.href = data.url;
-  } catch (err) {
-    console.error(err);
-    alert(err.message || 'Unable to start express checkout.');
+    const fulfilment =
+      document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+
+    // Use your existing totals helper so we stay in sync with the UI:
+    // subtotal, fees (service+tax), deliveryFee, tip, grand
+    const totals = computeTotals();
+    const fees = totals.fees || 0;                 // service & tax in dollars
+    const delivery = totals.deliveryFee || 0;      // delivery fee in dollars
+    const tip = totals.tip || 0;                   // tip in dollars
+
+    // Base cart: actual menu items (prices in cents)
+    const simplifiedCart = cart.map(i => ({
+      id: i.id,
+      name: i.name,
+      unitPrice: Math.round(i.price * 100), // cents
+      quantity: i.quantity,
+      sauce: i.sauce || null,
+      freeSide: i.freeSide || null,
+    }));
+
+    // Add Delivery fee as its own line item (if any)
+    const deliveryCents = Math.round(delivery * 100);
+    if (deliveryCents > 0) {
+      simplifiedCart.push({
+        id: 'delivery_fee',
+        name: 'Delivery fee',
+        unitPrice: deliveryCents,
+        quantity: 1,
+      });
+    }
+
+    // Add Service & tax as its own line item (if any)
+    const feesCents = Math.round(fees * 100);
+    if (feesCents > 0) {
+      simplifiedCart.push({
+        id: 'service_tax',
+        name: 'Service & tax',
+        unitPrice: feesCents,
+        quantity: 1,
+      });
+    }
+
+    const payload = {
+      fulfilment,
+      // Tip still goes as a separate field so the backend can create a "Driver tip" line
+      tipCents: Math.round(tip * 100),
+      cart: simplifiedCart,
+      successUrl: window.location.origin + '/thank-you.html',
+      cancelUrl: window.location.href,
+    };
+
+    try {
+      const resp = await fetch(api('/create-checkout-session'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || !data.url) {
+        throw new Error(data.error || 'Failed to start checkout');
+      }
+
+      // Redirect to Stripe Checkout (this page has Apple Pay button)
+      window.location.href = data.url;
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Unable to start express checkout.');
+    }
   }
-}
+
 
   
   // Cart open/close
