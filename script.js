@@ -1147,21 +1147,50 @@ function initEventListeners() {
    * Sends the current cart (including fees, delivery, and tip) to the backend
    * and redirects to session.url.
    */
-  async function startStripeCheckout() {
-    if (cart.length === 0) {
-      alert('Your cart is empty. Please add items.');
-      return;
+async function startStripeCheckout() {
+  if (cart.length === 0) {
+    alert('Your cart is empty. Please add items.');
+    return;
+  }
+
+  const fulfilment =
+    document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+
+  // 🔐 Require basic customer info before allowing express checkout
+  const nameInput = document.getElementById('customerName');
+  const phoneInput = document.getElementById('customerPhone');
+  const addressInput = document.getElementById('deliveryAddress');
+
+  const name = (nameInput?.value || '').trim();
+  const phone = (phoneInput?.value || '').trim();
+  const addressLine1 = (addressInput?.value || '').trim();
+
+  if (!name || !phone || (fulfilment === 'delivery' && !addressLine1)) {
+    let msg = 'Please enter your name and phone number';
+    if (fulfilment === 'delivery') {
+      msg += ' and a delivery address';
+    }
+    msg += ' before checkout.';
+    alert(msg);
+
+    if (!name && nameInput) {
+      nameInput.focus();
+    } else if (!phone && phoneInput) {
+      phoneInput.focus();
+    } else if (fulfilment === 'delivery' && addressInput && !addressLine1) {
+      addressInput.focus();
     }
 
-    const fulfilment =
-      document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+    return;
+  }
 
-    // Use your existing totals helper so we stay in sync with the UI:
-    // subtotal, fees (service+tax), deliveryFee, tip, grand
-    const totals = computeTotals();
-    const fees = totals.fees || 0;                 // service & tax in dollars
-    const delivery = totals.deliveryFee || 0;      // delivery fee in dollars
-    const tip = totals.tip || 0;                   // tip in dollars
+  // Use your existing totals helper so we stay in sync with the UI:
+  // subtotal, fees (service+tax), deliveryFee, tip, grand
+  const totals = computeTotals();
+  const fees = totals.fees || 0;                 // service & tax in dollars
+  const delivery = totals.deliveryFee || 0;      // delivery fee in dollars
+  const tip = totals.tip || 0;                   // tip in dollars
+
 
     // Base cart: actual menu items (prices in cents)
     const simplifiedCart = cart.map(i => ({
@@ -1195,14 +1224,22 @@ function initEventListeners() {
       });
     }
 
-    const payload = {
-      fulfilment,
-      // Tip still goes as a separate field so the backend can create a "Driver tip" line
-      tipCents: Math.round(tip * 100),
-      cart: simplifiedCart,
-      successUrl: window.location.origin + '/thank-you.html',
-      cancelUrl: window.location.href,
-    };
+const payload = {
+  fulfilment,
+  name,
+  phone,
+  address: {
+    line1: addressLine1,
+    city: '',
+    postal_code: ''
+  },
+  // Tip still goes as a separate field so the backend can create a "Driver tip" line
+  tipCents: Math.round(tip * 100),
+  cart: simplifiedCart,
+  successUrl: window.location.origin + '/thank-you.html',
+  cancelUrl: window.location.href,
+};
+
 
     try {
       const resp = await fetch(api('/create-checkout-session'), {
