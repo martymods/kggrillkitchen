@@ -79,7 +79,7 @@ const mains = [
     name: 'Chicken Kabobs',
     price: 16.0,
     description: 'Skewered chicken with peppers and onions.',
-    image: '/pictures/chickenKabobs.jpeg',  // <= UPDATED,
+    image: '/pictures/chickenKabobs.JPG',  // <= UPDATED,
   },
   {
     id: 'beef_kabobs',
@@ -113,7 +113,7 @@ const sides = [
     name: 'Mac & Cheese',
     price: 6.5,
     description: 'Creamy macaroni baked with cheddar cheese.',
-    image: '/pictures/macandcheese.jpeg',
+    image: '/pictures/macandcheese.png',
   },
   {
     id: 'potato_wedges',
