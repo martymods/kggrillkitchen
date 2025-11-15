@@ -627,14 +627,34 @@ function closeCart(scrollToMenu = false) {
 }
 
 
-/**
- * Update the cart button label with the total quantity of items.
- */
 function updateCartButton() {
   const btn = document.getElementById('viewCartBtn');
+  if (!btn) return;
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  btn.textContent = `Cart (${totalItems})`;
+  const normalLabel = `Cart (${totalItems})`;
+
+  // Save the "normal" label so other helpers can restore it if needed
+  btn.dataset.originalLabel = normalLabel;
+
+  const isMobile = window.innerWidth <= 600;
+
+  // Cart drawer state
+  const cartPanel = document.getElementById('cartPanel');
+  const cartIsOpen =
+    cartPanel && cartPanel.classList.contains('open');
+
+  // While on mobile AND either:
+  //  - the cart drawer is open, or
+  //  - we're in the mobile checkout flow,
+  // the button should read "Continue shopping".
+  if (isMobile && (cartIsOpen || inMobileCheckout)) {
+    btn.textContent = 'Continue shopping';
+  } else {
+    btn.textContent = normalLabel;
+  }
 }
+
 
 /**
  * Save a field value to localStorage.
