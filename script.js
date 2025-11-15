@@ -79,7 +79,7 @@ const mains = [
     name: 'Chicken Kabobs',
     price: 16.0,
     description: 'Skewered chicken with peppers and onions.',
-    image: '/pictures/chickenKabobs.jpeg',  // <= UPDATED,
+    image: '/pictures/chickenKabobs.JPG',  // <= UPDATED,
   },
   {
     id: 'beef_kabobs',
