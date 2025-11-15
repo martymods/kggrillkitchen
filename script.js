@@ -1728,5 +1728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCart();
   updateCartButton();
   initEventListeners();
+  initBackgroundMusic();   // 🔊 set up music & speaker toggle
   await initStripe();
 });
+
