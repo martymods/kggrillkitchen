@@ -113,7 +113,7 @@ const sides = [
     name: 'Mac & Cheese',
     price: 6.5,
     description: 'Creamy macaroni baked with cheddar cheese.',
-    image: '/pictures/macandcheese.jpeg',
+    image: '/pictures/macandcheese.png',
   },
   {
     id: 'potato_wedges',
