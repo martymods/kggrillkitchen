@@ -79,14 +79,14 @@ const mains = [
     name: 'Chicken Kabobs',
     price: 16.0,
     description: 'Skewered chicken with peppers and onions.',
-    image: '/pictures/chickenKabobs.JPG',  // <= UPDATED,
+    image: '/pictures/chickenKabobs.jpeg',  // <= UPDATED,
   },
   {
     id: 'beef_kabobs',
     name: 'Beef Kabobs',
     price: 16.0,
     description: 'Tender beef kabobs seasoned and grilled.',
-    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
+    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
   },
   {
     id: 'shrimp_kabobs',
@@ -113,7 +113,7 @@ const sides = [
     name: 'Mac & Cheese',
     price: 6.5,
     description: 'Creamy macaroni baked with cheddar cheese.',
-    image: '/pictures/macandcheese.png',
+    image: '/pictures/macandcheese.jpeg',
   },
   {
     id: 'potato_wedges',
@@ -149,14 +149,14 @@ const sides = [
     name: 'Chicken Kabob (1 piece)',
     price: 3.5,
     description: 'One skewer of chicken kabob as a side.',
-    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
+    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
   },
   {
     id: 'side_beef_kabob',
     name: 'Beef Kabob (1 piece)',
     price: 3.5,
     description: 'One skewer of beef kabob as a side.',
-    image: '/pictures/beefKabobs.jpeg',     // <= UPDATED
+    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
   },
   {
     id: 'side_shrimp_kabob',
