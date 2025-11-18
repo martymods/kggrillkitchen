@@ -23,7 +23,7 @@ const mains = [
     price: 25.0,
     description: 'Slow‑cooked ribs glazed with our signature BBQ sauce.',
     // Use the uploaded image for beef ribs
-    image: '/pictures/beefRibs.png',
+    image: '/pictures/beefRibs.jpeg',
   },
   {
     id: 'beef_burgers',
@@ -95,7 +95,16 @@ const mains = [
     description: 'Grilled shrimp skewers with garlic butter.',
     image: '/pictures/shrimpKabobs.jpeg',
   },
+
+  {
+    id: 'kg_mystery',
+    name: 'KG Surprise Item',
+    price: 4.0,
+    description: 'A random treat from KG’s grill – could be a wing, kabob, extra scoop or something special.',
+    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png',
+  },
 ];
+
 
 // Define side dishes. Most sides are priced at $6.50, except Cassava Leaf
 // which is a premium dish. Additional small side portions (one wing or
@@ -195,6 +204,208 @@ const freeSideChoices = [
 
 // In-memory cart
 const cart = [];
+
+// ---------------------------------------------------------------------------
+// Gamification: Grill Points & Upsell helpers
+// ---------------------------------------------------------------------------
+
+let grillPoints = 0;
+let grillPointsLifetime = 0;
+
+/**
+ * Ensure the small bits of UI we need for gamification exist:
+ * - Header Grill Points badge
+ * - Cart upsell area
+ * - Toast for quick feedback
+ */
+function ensureGamificationUI() {
+  const headerInner = document.querySelector('.header-inner');
+  if (headerInner && !document.getElementById('grillPointsBadge')) {
+    const badge = document.createElement('div');
+    badge.id = 'grillPointsBadge';
+    badge.className = 'grill-points-badge';
+    badge.innerHTML = '🔥 Grill Points: <span id="grillPointsValue">0</span>';
+    headerInner.appendChild(badge);
+  }
+
+  const cartPanel = document.getElementById('cartPanel');
+  if (cartPanel && !document.getElementById('cartUpsell')) {
+    const footer = cartPanel.querySelector('.cart-footer');
+    if (footer) {
+      const upsell = document.createElement('div');
+      upsell.id = 'cartUpsell';
+      upsell.className = 'cart-upsell';
+      cartPanel.insertBefore(upsell, footer);
+    }
+  }
+
+  if (!document.getElementById('grillPointsToast')) {
+    const t = document.createElement('div');
+    t.id = 'grillPointsToast';
+    t.className = 'grill-points-toast';
+    document.body.appendChild(t);
+  }
+}
+
+function loadGrillPoints() {
+  const saved = Number(localStorage.getItem('kg_grill_points') || '0');
+  const savedLife = Number(localStorage.getItem('kg_grill_points_lifetime') || '0');
+  grillPoints = Number.isFinite(saved) ? saved : 0;
+  grillPointsLifetime = Number.isFinite(savedLife) ? savedLife : grillPoints;
+  updateGrillPointsUI();
+}
+
+function saveGrillPoints() {
+  localStorage.setItem('kg_grill_points', String(grillPoints));
+  localStorage.setItem('kg_grill_points_lifetime', String(grillPointsLifetime));
+}
+
+function updateGrillPointsUI() {
+  const valEl = document.getElementById('grillPointsValue');
+  if (valEl) {
+    valEl.textContent = grillPoints;
+  }
+}
+
+let grillToastTimeout;
+function showGrillPointsToast(message) {
+  const toast = document.getElementById('grillPointsToast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(grillToastTimeout);
+  grillToastTimeout = setTimeout(() => {
+    toast.classList.remove('visible');
+  }, 2500);
+}
+
+/**
+ * Grant points and update UI.
+ */
+function awardGrillPoints(points, reason) {
+  if (!points || points <= 0) return;
+  grillPoints += points;
+  grillPointsLifetime += points;
+  saveGrillPoints();
+  updateGrillPointsUI();
+  if (reason) {
+    showGrillPointsToast(`+${points} Grill Points – ${reason}`);
+  } else {
+    showGrillPointsToast(`+${points} Grill Points`);
+  }
+}
+
+/**
+ * Simple rules for points per added item.
+ * Big plates and fish give more.
+ */
+function awardGrillPointsForItem(item) {
+  if (!item) return;
+  let base = 10; // every add to cart feels rewarding
+  if (item.price >= 20) base += 10; // big plate bonus
+  if (['snapper', 'salmon', 'tilapia', 'beef_ribs'].includes(item.id)) {
+    base += 10; // premium grill items
+  }
+  awardGrillPoints(base, `for adding ${item.name}`);
+}
+
+/**
+ * Cart-level upsell suggestions.
+ * Called from updateCartTotals(subtotal).
+ */
+function updateCartUpsell(subtotal) {
+  const upsellEl = document.getElementById('cartUpsell');
+  if (!upsellEl) return;
+
+  if (!cart.length) {
+    upsellEl.innerHTML = `
+      <p class="cart-upsell-text">
+        🔥 Start your order to begin earning Grill Points and unlock KG bonuses.
+      </p>
+    `;
+    return;
+  }
+
+  const sideIds = ['jollof_rice', 'mac_cheese', 'potato_wedges'];
+  const kabobIds = [
+    'chicken_kabobs', 'beef_kabobs', 'shrimp_kabobs',
+    'side_chicken_kabob', 'side_beef_kabob', 'side_shrimp_kabob',
+  ];
+  const mainIds = mains.map(m => m.id);
+
+  const hasSide = cart.some(i => sideIds.includes(i.id));
+  const hasKabob = cart.some(i => kabobIds.includes(i.id));
+  const hasMain = cart.some(i => mainIds.includes(i.id));
+
+  let html = '';
+
+  if (hasMain && !hasSide) {
+    // Push them to add a main side
+    html = `
+      <p class="cart-upsell-text">
+        🍚 Level up your plate – add a side and earn bonus Grill Points.
+      </p>
+      <div class="cart-upsell-actions">
+        <button type="button" class="cart-upsell-btn" data-upsell-id="jollof_rice">
+          Add Jollof Rice ($6.50)
+        </button>
+        <button type="button" class="cart-upsell-btn" data-upsell-id="mac_cheese">
+          Add Mac &amp; Cheese ($6.50)
+        </button>
+      </div>
+    `;
+  } else if (hasMain && !hasKabob) {
+    // Push kabobs as fun add-ons
+    html = `
+      <p class="cart-upsell-text">
+        🔥 KG just pulled kabobs off the grill. Add a couple skewers?
+      </p>
+      <div class="cart-upsell-actions">
+        <button type="button" class="cart-upsell-btn" data-upsell-id="side_chicken_kabob">
+          Add 1 Chicken Kabob ($3.50)
+        </button>
+        <button type="button" class="cart-upsell-btn" data-upsell-id="side_beef_kabob">
+          Add 1 Beef Kabob ($3.50)
+        </button>
+      </div>
+    `;
+  } else if (subtotal < 40) {
+    const diff = 40 - subtotal;
+    html = `
+      <p class="cart-upsell-text">
+        🎯 Spend ${formatCurrency(diff)} more to hit the KG Bonus Zone –
+        KG drops surprise extras and extra Grill Points for big orders.
+      </p>
+    `;
+  } else {
+    // High spend – offer KG Surprise
+    html = `
+      <p class="cart-upsell-text">
+        🎁 Big plate energy! Add a KG Surprise Item for $4 and let KG
+        throw something special from the grill in your box.
+      </p>
+      <div class="cart-upsell-actions">
+        <button type="button" class="cart-upsell-btn" data-upsell-id="kg_mystery">
+          Add KG Surprise ($4)
+        </button>
+      </div>
+    `;
+  }
+
+  upsellEl.innerHTML = html;
+
+  // Wire up buttons to actually add the upsell item(s)
+  upsellEl.querySelectorAll('.cart-upsell-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-upsell-id');
+      const allItems = mains.concat(sides);
+      const item = allItems.find(i => i.id === id);
+      if (!item) return;
+      addToCart(item);
+    });
+  });
+}
+
 
 // Restaurant coordinates (approximate location in Philadelphia)
 const restaurantCoords = { lat: 39.9526, lon: -75.1652 };
@@ -346,6 +557,10 @@ function addToCart(item) {
     }
     cart.push(cartItem);
   }
+
+  // 🎮 Gamification: award Grill Points for every add
+  awardGrillPointsForItem(item);
+
   // Show cart and update UI
   openCart();
   renderCart();
@@ -458,6 +673,10 @@ function updateQuantity(itemId, delta) {
 function updateCartTotals() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   let total = subtotal;
+
+    // 🎮 Update cart-level upsell suggestions
+  updateCartUpsell(subtotal);
+
   // Determine order type
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
   // Delivery fee
@@ -1743,12 +1962,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Normal app init
   renderMenu();
+  ensureGamificationUI();   // 🎮 create Grill Points badge, upsell area, toast
+  loadGrillPoints();        // 🎮 load saved points from previous visits
   loadSavedDetails();
   updateOrderType();
   renderCart();
   updateCartButton();
   initEventListeners();
-  initBackgroundMusic();   // 🔊 set up music & speaker toggle
+  initBackgroundMusic();    // 🔊 set up music & speaker toggle
   await initStripe();
+
 });
 
