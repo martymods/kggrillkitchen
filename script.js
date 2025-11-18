@@ -101,7 +101,7 @@ const mains = [
     name: 'KG Surprise Item',
     price: 4.0,
     description: 'A random treat from KG’s grill – could be a wing, kabob, extra scoop or something special.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png',
+    image: '/pictures/kg_mystery-item.png',
   },
 ];
 
