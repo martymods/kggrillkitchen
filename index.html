@@ -47,11 +47,13 @@
           <h1 class="site-title">KG&nbsp;Grill&nbsp;Kitchen</h1>
         </div>
 
-        <div class="order-type" role="group" aria-label="Select fulfilment method">
-          <span class="order-type-label">Select Order Type:</span>
-          <label><input type="radio" name="orderType" value="pickup" checked>Pickup</label>
-          <label><input type="radio" name="orderType" value="delivery">Delivery</label>
-        </div>
+<div class="order-type" role="group" aria-label="Select fulfilment method">
+  <span class="order-type-label">Select Order Type:</span>
+  <label><input type="radio" name="orderType" value="pickup" checked>Pickup</label>
+  <label><input type="radio" name="orderType" value="delivery">Delivery</label>
+  <label><input type="radio" name="orderType" value="inline">In-line / In-store</label>
+</div>
+
 
         <button id="viewCartBtn"
                 class="view-cart-btn"
@@ -139,6 +141,11 @@
                autocomplete="tel"
                required>
 
+        <p id="inlinePayNotice" class="inline-notice" hidden>
+          You’ll pay at the cashier when your order is ready. No online payment required.
+        </p>
+
+
         <!-- Payment UI -->
         <fieldset id="paymentFieldset" class="payment-fieldset">
           <legend>Payment</legend>
@@ -206,3 +213,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+ 
