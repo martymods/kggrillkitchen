@@ -640,3 +640,62 @@ body.show-splash .app-content {
 .apple-pay-btn:hover {
   filter: brightness(1.1);
 }
+
+.grill-points-badge {
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cart-upsell {
+  margin: 10px 0 0;
+  padding: 10px;
+  border-top: 1px dashed #ccc;
+  font-size: 0.9rem;
+}
+
+.cart-upsell-text {
+  margin: 0 0 6px;
+}
+
+.cart-upsell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cart-upsell-btn {
+  border: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #198754;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.grill-points-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.9);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 9999;
+}
+
+.grill-points-toast.visible {
+  opacity: 1;
+}
