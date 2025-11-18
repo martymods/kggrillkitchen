@@ -247,18 +247,87 @@ function ensureGamificationUI() {
   }
 }
 
-function loadGrillPoints() {
+let grillPointsSyncInFlight = null;
+
+function getLocalGrillPoints() {
   const saved = Number(localStorage.getItem('kg_grill_points') || '0');
   const savedLife = Number(localStorage.getItem('kg_grill_points_lifetime') || '0');
-  grillPoints = Number.isFinite(saved) ? saved : 0;
-  grillPointsLifetime = Number.isFinite(savedLife) ? savedLife : grillPoints;
+  return {
+    points: Number.isFinite(saved) ? saved : 0,
+    lifetime: Number.isFinite(savedLife) ? savedLife : 0,
+  };
+}
+
+/**
+ * Load Grill Points for this visitor.
+ * 1) Try backend (/kg/grill-points, keyed by IP + R2 JSON).
+ * 2) Fall back to localStorage if backend fails.
+ */
+async function loadGrillPoints() {
+  // Try backend first
+  try {
+    const resp = await fetch(api('/grill-points'));
+    if (resp.ok) {
+      const data = await resp.json();
+      const backendPoints = Number(data.points || 0);
+      const backendLifetime = Number(data.lifetime || backendPoints || 0);
+
+      grillPoints = Number.isFinite(backendPoints) ? backendPoints : 0;
+      grillPointsLifetime = Number.isFinite(backendLifetime) ? backendLifetime : grillPoints;
+
+      // Mirror into localStorage so it feels instant + works offline
+      localStorage.setItem('kg_grill_points', String(grillPoints));
+      localStorage.setItem('kg_grill_points_lifetime', String(grillPointsLifetime));
+
+      updateGrillPointsUI();
+      return;
+    }
+  } catch (err) {
+    console.warn('Failed to load Grill Points from backend, using local values instead:', err);
+  }
+
+  // Fallback: just use local storage
+  const local = getLocalGrillPoints();
+  grillPoints = local.points;
+  grillPointsLifetime = local.lifetime || local.points;
   updateGrillPointsUI();
 }
 
+/**
+ * Save Grill Points:
+ *  - Always write locally (instant feedback).
+ *  - Fire-and-forget sync to backend (R2 via /kg/grill-points).
+ */
 function saveGrillPoints() {
   localStorage.setItem('kg_grill_points', String(grillPoints));
   localStorage.setItem('kg_grill_points_lifetime', String(grillPointsLifetime));
+  syncGrillPointsToBackend();
 }
+
+async function syncGrillPointsToBackend() {
+  if (grillPointsSyncInFlight) return grillPointsSyncInFlight;
+
+  const payload = {
+    points: grillPoints,
+    lifetime: grillPointsLifetime,
+    event: 'frontend_update',
+  };
+
+  grillPointsSyncInFlight = fetch(api('/grill-points'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .catch((err) => {
+      console.warn('Failed to sync Grill Points to backend', err);
+    })
+    .finally(() => {
+      grillPointsSyncInFlight = null;
+    });
+
+  return grillPointsSyncInFlight;
+}
+
 
 function updateGrillPointsUI() {
   const valEl = document.getElementById('grillPointsValue');
@@ -1963,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Normal app init
   renderMenu();
   ensureGamificationUI();   // 🎮 create Grill Points badge, upsell area, toast
-  loadGrillPoints();        // 🎮 load saved points from previous visits
+  await loadGrillPoints();  // 🎮 load points from R2 (fallback to local)
   loadSavedDetails();
   updateOrderType();
   renderCart();
