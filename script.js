@@ -476,8 +476,9 @@ function updateCartUpsell(subtotal) {
 }
 
 
-// Restaurant coordinates (approximate location in Philadelphia)
-const restaurantCoords = { lat: 39.9526, lon: -75.1652 };
+// Restaurant coordinates (approximate location near 5750 Baltimore Ave)
+const restaurantCoords = { lat: 39.9448, lon: -75.2390 }; // ~58th & Baltimore
+const INLINE_RADIUS_MILES = 0.2;
 let userCoords = null;
 let deliveryFee = 0;
 let inMobileCheckout = false;
@@ -1064,6 +1065,52 @@ function showMapAndDistance() {
 }
 
 /**
+ * For in-line/in-store orders, require the customer to be within
+ * ~0.2 miles of the restaurant. Returns a Promise<boolean>.
+ */
+function requireInlineProximity() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      alert('Location is required to use in-line ordering. Please enable location access or order at the counter.');
+      return resolve(false);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        userCoords = { lat: latitude, lon: longitude };
+
+        const dMiles = computeDistanceMiles(
+          userCoords.lat,
+          userCoords.lon,
+          restaurantCoords.lat,
+          restaurantCoords.lon
+        );
+
+        if (dMiles <= INLINE_RADIUS_MILES) {
+          resolve(true);
+        } else {
+          alert('To use in-line ordering, you must be close to KG Grill Kitchen at 5750 Baltimore Ave. Please choose Pickup/Delivery or order at the counter.');
+          // Flip back to pickup if they were trying inline
+          const pickupRadio = document.querySelector('input[name="orderType"][value="pickup"]');
+          if (pickupRadio) {
+            pickupRadio.checked = true;
+          }
+          updateOrderType();
+          resolve(false);
+        }
+      },
+      (err) => {
+        console.warn('Inline geolocation failed', err);
+        alert('We could not read your location. Please enable GPS/location or order at the counter.');
+        resolve(false);
+      }
+    );
+  });
+}
+
+
+/**
  * Update the delivery fields visibility based on selected order type. When
  * switching to delivery, attempt to prefill address and compute fee, but
  * NEVER override a manually-entered or previously-saved address.
@@ -1072,6 +1119,8 @@ function updateOrderType() {
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
   const deliveryFields = document.getElementById('deliveryFields');
   const addressEl = document.getElementById('deliveryAddress');
+  const inlineNoticeEl = document.getElementById('inlinePayNotice');
+  const paymentFieldset = document.getElementById('paymentFieldset');
 
   if (orderType === 'delivery') {
     deliveryFields.hidden = false;
@@ -1092,11 +1141,20 @@ function updateOrderType() {
     updateCartTotals();
   }
 
+  // Inline / in-store UI: show notice + hide payment section
+  if (inlineNoticeEl) {
+    inlineNoticeEl.hidden = orderType !== 'inline';
+  }
+  if (paymentFieldset) {
+    paymentFieldset.hidden = orderType === 'inline';
+  }
+
   // Persist selection
   saveField('kg_orderType', orderType);
   // Update tip UI when order type changes
   updateTipSection();
 }
+
 
 /**
  * Forward-geocode a typed/saved address string, update userCoords, show map,
@@ -1268,6 +1326,86 @@ async function initStripe() {
     });
   } catch (error) {
     console.warn('Error mounting PaymentRequestButton', error);
+  }
+}
+
+async function submitInlineOrder() {
+  const nameEl = document.getElementById('customerName');
+  const phoneEl = document.getElementById('customerPhone');
+  const notesEl = document.getElementById('orderNotes');
+
+  const name  = (nameEl?.value || '').trim();
+  const phone = (phoneEl?.value || '').trim();
+  const notes = (notesEl?.value || '').trim();
+
+  if (!name || !phone) {
+    displayPaymentMessage('Please enter your name and phone so we can call you when your order is ready.');
+    if (!name && nameEl) {
+      nameEl.focus();
+    } else if (!phone && phoneEl) {
+      phoneEl.focus();
+    }
+    return false;
+  }
+
+  if (!cart.length) {
+    displayPaymentMessage('Your cart is empty. Please add items.');
+    return false;
+  }
+
+  // Double-check proximity before sending
+  const nearbyOk = await requireInlineProximity();
+  if (!nearbyOk) return false;
+
+  const totals = computeTotals();
+
+  const payload = {
+    name,
+    phone,
+    notes,
+    fulfilment: 'inline',
+    items: cart.map((i) => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      unitPrice: Math.round(i.price * 100),
+      sauce: i.sauce || null,
+      freeSide: i.freeSide || null,
+    })),
+    subtotal: Math.round(totals.subtotal * 100),
+    deliveryFee: 0,
+    fees: Math.round((totals.fees || 0) * 100),
+    total: Math.round(totals.grand * 100),
+  };
+
+  try {
+    const res = await fetch(api('/line-order'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      console.error('Inline order failed', data);
+      displayPaymentMessage('Could not submit in-line order. Please try again or order at the counter.');
+      return false;
+    }
+
+    alert(`Thank you, ${name}! Your order has been sent to the kitchen.\nPlease pay at the cashier when your name is called.`);
+
+    // Reset cart + UI
+    cart = [];
+    saveCart();
+    renderCart();
+    updateCartButton();
+    updateCartTotals();
+    closeCart(true);
+
+    return true;
+  } catch (err) {
+    console.error('Inline order error', err);
+    displayPaymentMessage('Could not submit in-line order. Please try again or order at the counter.');
+    return false;
   }
 }
 
@@ -1633,9 +1771,22 @@ if (viewCartBtn) {
   }
 
   // Radio change
-  document.querySelectorAll('input[name="orderType"]').forEach(radio => {
-    radio.addEventListener('change', updateOrderType);
+document.querySelectorAll('input[name="orderType"]').forEach((radio) => {
+  radio.addEventListener('change', async (e) => {
+    const value = e.target.value;
+
+    if (value === 'inline') {
+      const ok = await requireInlineProximity();
+      if (!ok) {
+        // requireInlineProximity already reverted to pickup + updated the UI
+        return;
+      }
+    }
+
+    updateOrderType();
   });
+});
+
 
 // Overlay click to dismiss
 document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
@@ -1817,22 +1968,40 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
 
   // Form submission (card payment)
   // Form submission (card payment)
-  document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearPaymentMessage();
+document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearPaymentMessage();
 
-    // Basic form validation
-    const name = document.getElementById('customerName').value.trim();
-    const phone = document.getElementById('customerPhone').value.trim();
-    const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-    if (!name || !phone || (orderType === 'delivery' && !document.getElementById('deliveryAddress').value.trim())) {
-      displayPaymentMessage('Please fill out all required fields.');
-      return;
+  const nameEl = document.getElementById('customerName');
+  const phoneEl = document.getElementById('customerPhone');
+  const addrEl  = document.getElementById('deliveryAddress');
+
+  const name  = (nameEl?.value || '').trim();
+  const phone = (phoneEl?.value || '').trim();
+  const orderType =
+    document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+
+  if (!name || !phone || (orderType === 'delivery' && !addrEl?.value.trim())) {
+    displayPaymentMessage('Please fill out all required fields.');
+    if (!name && nameEl) {
+      nameEl.focus();
+    } else if (!phone && phoneEl) {
+      phoneEl.focus();
+    } else if (orderType === 'delivery' && addrEl && !addrEl.value.trim()) {
+      addrEl.focus();
     }
+    return;
+  }
 
-    // Create PaymentIntent if not already done
-    const clientSecret = await createPaymentIntent();
-    if (!clientSecret) return;
+  // In-line / in-store: NO Stripe, pay at cashier
+  if (orderType === 'inline') {
+    const ok = await submitInlineOrder();
+    return; // whether ok or not, we do not proceed to Stripe
+  }
+
+  // Normal paid orders: create PaymentIntent + confirm card
+  const clientSecret = await createPaymentIntent();
+  if (!clientSecret) return;
 
     // Confirm payment with card element (no shipping here – it’s set on the backend)
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
