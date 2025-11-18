@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KG Grill Kitchen | Line Board</title>
+
+  <!-- Same API base meta used by index.html -->
+  <meta name="kg-api-base" content="https://www.delcotechdivision.com/kg">
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232e8b57'/%3E%3Ctext x='50' y='58' text-anchor='middle' font-size='50' fill='white'%3EKG%3C/text%3E%3C/svg%3E">
+</head>
+<body class="line-page">
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <img src="pictures/kg_Grill_Kitchen_LogoDesign.png"
+             alt="KG Grill Kitchen logo"
+             class="site-logo">
+        <h1 class="site-title">KG Grill Kitchen – Line Board</h1>
+      </div>
+
+      <div class="line-header-actions">
+        <span class="line-header-role-hint">
+          For Waiters · Chefs · Owner
+        </span>
+        <a href="index.html" class="btn-outline small">
+          Back to customer view
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="line-main">
+    <!-- Tabs like DoorDash tablet -->
+    <div class="line-tabs" role="tablist" aria-label="Order filters">
+      <button class="line-tab active" data-filter="all" type="button">
+        All <span class="line-tab-count" data-count-for="all">0</span>
+      </button>
+      <button class="line-tab" data-filter="needs_action" type="button">
+        Needs action <span class="line-tab-count" data-count-for="needs_action">0</span>
+      </button>
+      <button class="line-tab" data-filter="in_progress" type="button">
+        In progress <span class="line-tab-count" data-count-for="in_progress">0</span>
+      </button>
+      <button class="line-tab" data-filter="ready" type="button">
+        Ready <span class="line-tab-count" data-count-for="ready">0</span>
+      </button>
+      <button class="line-tab" data-filter="scheduled" type="button">
+        Scheduled <span class="line-tab-count" data-count-for="scheduled">0</span>
+      </button>
+      <button class="line-tab" data-filter="history" type="button">
+        History <span class="line-tab-count" data-count-for="history">0</span>
+      </button>
+    </div>
+
+    <!-- Live orders list -->
+    <section class="line-orders-wrapper" aria-label="Orders">
+      <div id="lineOrdersEmpty" class="line-empty">
+        No orders yet. New orders will appear here in real time.
+      </div>
+      <div id="lineOrdersContainer" class="line-orders"></div>
+    </section>
+  </main>
+
+  <script src="analytics-client.js" defer></script>
+  <script>
+    // ------------------------- config helpers -------------------------
+    function getApiBase() {
+      const meta = document.querySelector('meta[name="kg-api-base"]');
+      return (meta && meta.content) || '';
+    }
+    const KG_API_BASE = getApiBase();
+
+    let currentFilter = 'all';
+    let currentOrders = [];
+
+    // ------------------------- rendering ------------------------------
+    function formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function renderOrders(orders) {
+      currentOrders = orders || [];
+      const container = document.getElementById('lineOrdersContainer');
+      const emptyState = document.getElementById('lineOrdersEmpty');
+
+      if (!container) return;
+
+      // Count per status
+      const counts = {
+        all: 0,
+        needs_action: 0,
+        in_progress: 0,
+        ready: 0,
+        scheduled: 0,
+        history: 0,
+      };
+
+      const visibleOrders = [];
+
+      const nowOrders = [...currentOrders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      for (const o of nowOrders) {
+        const status = (o.status || 'needs_action').toLowerCase();
+        const type = (o.type || o.fulfilment || 'pickup').toLowerCase();
+
+        const isHistory = status === 'completed' || status === 'canceled';
+        const isScheduled = status === 'scheduled' || !!o.isScheduled;
+
+        counts.all += isHistory ? 0 : 1;
+        if (status in counts) counts[status]++;
+
+        if (isScheduled) counts.scheduled++;
+        if (isHistory) counts.history++;
+
+        // Filter logic
+        let include = true;
+        if (currentFilter === 'needs_action') include = status === 'needs_action';
+        else if (currentFilter === 'in_progress') include = status === 'in_progress';
+        else if (currentFilter === 'ready') include = status === 'ready';
+        else if (currentFilter === 'scheduled') include = isScheduled;
+        else if (currentFilter === 'history') include = isHistory;
+        else if (currentFilter === 'all') include = !isHistory;
+
+        if (include) visibleOrders.push(o);
+      }
+
+      // Update tab counts
+      document.querySelectorAll('.line-tab-count').forEach(span => {
+        const key = span.dataset.countFor;
+        if (!key) return;
+        span.textContent = counts[key] ?? 0;
+      });
+
+      // Empty state
+      if (visibleOrders.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      container.innerHTML = '';
+
+      for (const order of visibleOrders) {
+        const status = (order.status || 'needs_action').toLowerCase();
+        const type = (order.type || order.fulfilment || 'pickup').toLowerCase();
+        const isHistory = status === 'completed' || status === 'canceled';
+
+        const card = document.createElement('article');
+        card.className = 'line-order-card status-' + status + ' type-' + type;
+        card.dataset.orderId = order.id;
+
+        const itemsHtml = (order.items || []).map(item => {
+          const qty = item.quantity || 1;
+          const name = item.name || item.id || 'Item';
+          const side = item.freeSide ? ` · Side: ${item.freeSide}` : '';
+          const sauce = item.sauce ? ` · Sauce: ${item.sauce}` : '';
+          return `<li>${qty}× ${name}<span class="line-item-meta">${side}${sauce}</span></li>`;
+        }).join('');
+
+        const fulfilLabel =
+          type === 'delivery' ? 'Delivery' :
+          type === 'inline' ? 'In-line (pay at cashier)' :
+          'Pickup';
+
+        const badgeText =
+          status === 'needs_action' ? 'Needs action' :
+          status === 'in_progress' ? 'In progress' :
+          status === 'ready' ? 'Ready' :
+          status === 'completed' ? 'Completed' :
+          status === 'canceled' ? 'Canceled' :
+          status === 'scheduled' ? 'Scheduled' :
+          status;
+
+        // Action buttons
+        let actionsHtml = '';
+        if (!isHistory) {
+          if (status === 'needs_action') {
+            actionsHtml = `
+              <button type="button" class="line-btn primary" data-action="start">Start</button>
+              <button type="button" class="line-btn subtle" data-action="cancel">Cancel</button>`;
+          } else if (status === 'in_progress') {
+            actionsHtml = `
+              <button type="button" class="line-btn primary" data-action="ready">Mark ready</button>
+              <button type="button" class="line-btn subtle" data-action="cancel">Cancel</button>`;
+          } else if (status === 'ready') {
+            actionsHtml = `
+              <button type="button" class="line-btn primary" data-action="complete">Complete</button>`;
+          } else if (status === 'scheduled') {
+            actionsHtml = `
+              <button type="button" class="line-btn primary" data-action="start">Start now</button>`;
+          }
+        }
+
+        const totalCents = order.totals?.total ?? order.total ?? null;
+        const totalText = typeof totalCents === 'number'
+          ? '$' + (totalCents / 100).toFixed(2)
+          : '';
+
+        card.innerHTML = `
+          <header class="line-order-header">
+            <div>
+              <div class="line-order-id">${order.id || 'Order'}</div>
+              <div class="line-order-meta">
+                <span class="pill pill-${type}">${fulfilLabel}</span>
+                <span class="pill pill-status pill-${status}">${badgeText}</span>
+                <span class="line-order-time">${formatTime(order.createdAt)}</span>
+              </div>
+            </div>
+            ${totalText ? `<div class="line-order-total">${totalText}</div>` : ''}
+          </header>
+          <div class="line-order-body">
+            <div class="line-order-customer">
+              ${order.name ? `<div class="line-order-name">${order.name}</div>` : ''}
+              ${order.phone ? `<div class="line-order-phone">${order.phone}</div>` : ''}
+              ${order.address ? `<div class="line-order-address">${order.address}</div>` : ''}
+            </div>
+            <ul class="line-order-items">
+              ${itemsHtml}
+            </ul>
+            ${order.notes ? `<div class="line-order-notes">📝 ${order.notes}</div>` : ''}
+          </div>
+          <footer class="line-order-footer">
+            ${actionsHtml}
+          </footer>
+        `;
+
+        container.appendChild(card);
+      }
+    }
+
+    // ------------------------- API calls ------------------------------
+    async function fetchOrders() {
+      try {
+        const res = await fetch(KG_API_BASE + '/line-orders?includeHistory=1', {
+          cache: 'no-store',
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        renderOrders(data.orders || []);
+      } catch (err) {
+        console.error('Failed to load line orders', err);
+      }
+    }
+
+    async function updateOrderStatus(id, action) {
+      let status;
+      if (action === 'start') status = 'in_progress';
+      else if (action === 'ready') status = 'ready';
+      else if (action === 'complete') status = 'completed';
+      else if (action === 'cancel') status = 'canceled';
+      else return;
+
+      try {
+        const res = await fetch(KG_API_BASE + '/line-orders/' + encodeURIComponent(id) + '/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data.order) {
+          const idx = currentOrders.findIndex(o => o.id === data.order.id);
+          if (idx >= 0) {
+            currentOrders[idx] = data.order;
+          } else {
+            currentOrders.unshift(data.order);
+          }
+          renderOrders(currentOrders);
+        } else {
+          await fetchOrders();
+        }
+      } catch (err) {
+        console.error('Failed to update order status', err);
+        alert('Could not update order. Please try again.');
+      }
+    }
+
+    // ------------------------- events --------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tab clicks
+      document.querySelectorAll('.line-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.line-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter || 'all';
+          renderOrders(currentOrders);
+        });
+      });
+
+      // Action buttons via delegation
+      document.getElementById('lineOrdersContainer').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const card = btn.closest('.line-order-card');
+        const id = card?.dataset.orderId;
+        if (!id) return;
+        updateOrderStatus(id, action);
+      });
+
+      // Initial fetch + polling
+      fetchOrders();
+      setInterval(fetchOrders, 4000);
+
+      window.addEventListener('focus', fetchOrders);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) fetchOrders();
+      });
+    });
+  </script>
+</body>
+</html>
