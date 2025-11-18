@@ -20,7 +20,7 @@ const mains = [
   {
     id: 'beef_ribs',
     name: 'Beef Ribs',
-    price: 25.0,
+    price: 20.0,
     description: 'Slow‑cooked ribs glazed with our signature BBQ sauce.',
     // Use the uploaded image for beef ribs
     image: '/pictures/beefRibs.jpeg',
@@ -28,28 +28,28 @@ const mains = [
   {
     id: 'beef_burgers',
     name: 'Beef Burgers',
-    price: 5.0,
+    price: 5.5,
     description: 'Juicy grilled burgers with fresh lettuce and tomato.',
     image: '/pictures/beefBurger.jpeg',
   },
   {
     id: 'beef_patties',
     name: 'Beef Patties',
-    price: 3.0,
+    price: 3.5,
     description: 'Crispy golden beef patties with a flaky crust.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'chicken_wings',
     name: 'Chicken Wings',
-    price: 16.0,
+    price: 6.0,
     description: 'Crisp fried wings tossed in your choice of sauce.',
     image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
   {
     id: 'chicken_quarter',
     name: 'Chicken Quarter Legs',
-    price: 16.0,
+    price: 7.5,
     description: 'Marinated and grilled chicken quarter legs.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
@@ -63,14 +63,14 @@ const mains = [
   {
     id: 'tilapia',
     name: 'Tilapia (w/ Head)',
-    price: 26.0,
+    price: 21.0,
     description: 'Whole tilapia served with head, seasoned and roasted.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'salmon',
     name: 'Salmon',
-    price: 26.0,
+    price: 21.0,
     description: 'Pan‑seared salmon fillet with lemon herb butter.',
     image: '/pictures/salmon.jpeg',
   },
@@ -113,35 +113,35 @@ const sides = [
   {
     id: 'jollof_rice',
     name: 'Jollof Rice',
-    price: 6.5,
+    price: 6.0,
     description: 'West African seasoned rice cooked in a rich tomato sauce.',
     image: '/pictures/jollofRice.gif',
   },
   {
     id: 'mac_cheese',
     name: 'Mac & Cheese',
-    price: 6.5,
+    price: 6.0,
     description: 'Creamy macaroni baked with cheddar cheese.',
     image: '/pictures/macandcheese.png',
   },
   {
     id: 'potato_wedges',
     name: 'Potato Wedges',
-    price: 6.5,
+    price: 6.0,
     description: 'Seasoned potato wedges fried until crispy.',
     image: '/pictures/potatoWedges.jpeg',
   },
   {
     id: 'cassava_leaf',
     name: 'Cassava Leaf',
-    price: 16.0,
+    price: 16.5,
     description: 'Traditional Liberian stew made with cassava leaves.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'potato_greens',
     name: 'Potato Greens & White Rice',
-    price: 6.5,
+    price: 16.5,
     description: 'Savory potato greens served with fluffy white rice.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
