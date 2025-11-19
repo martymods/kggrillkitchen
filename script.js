@@ -42,7 +42,7 @@ const mains = [
   {
     id: 'chicken_wings',
     name: 'Chicken Wings',
-    price: 6.0,
+    price: 16.0,
     description: 'Crisp fried wings tossed in your choice of sauce.',
     image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
