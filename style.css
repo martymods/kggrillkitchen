@@ -562,17 +562,31 @@ body {
     margin-top: 4.5rem;
   }
 
-    /* Mobile: move discount badge to top-right and shrink it */
-  .inline-discount-badge {
-    position: absolute;
-    top: 0.5rem;        /* tweak if you want it a bit higher/lower */
-    right: 0.75rem;
-    margin-top: 0;      /* no extra space in the flow */
+/* In-store discount badge positioning */
+.inline-discount-badge {
+  position: absolute;
+  top: 0.2rem;  /* raise it */
+  right: 0.2rem;
+  z-index: 10;  /* ensures it sits above radio buttons */
+}
+
+.inline-discount-badge img {
+  width: 65px;      /* smaller */
+  height: auto;
+  display: block;
+}
+
+/* On very small screens, shrink more */
+@media (max-width: 600px) {
+  .inline-discount-badge img {
+    width: 55px;
   }
 
-  .inline-discount-badge img {
-    max-width: 70px;    /* smaller starburst on phones */
+  .inline-discount-badge {
+    top: -0.2rem;   /* move even higher */
+    right: 0.2rem;
   }
+}
 
 }
 
@@ -1033,16 +1047,3 @@ body.show-splash .app-content {
   max-width: 120px;
 }
 
-/* Mobile placement */
-@media (max-width: 600px) {
-  .inline-discount-badge {
-    position: absolute;
-    right: 0.5rem;
-    top: 0.5rem;
-  }
-
-  .inline-discount-badge img {
-    max-width: 65px;  /* smaller on phones */
-    height: auto;
-  }
-}
