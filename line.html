@@ -173,6 +173,51 @@
       return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     }
 
+    // Live “time since order placed” timers for each active order
+let orderTimerIntervalId = null;
+
+function startOrderTimers() {
+  if (orderTimerIntervalId != null) return;
+  orderTimerIntervalId = window.setInterval(updateOrderTimers, 1000);
+  // Update immediately so the chef sees something right away
+  updateOrderTimers();
+}
+
+function updateOrderTimers() {
+  const now = Date.now();
+
+  document
+    .querySelectorAll('.line-order-card[data-timer-active="1"]')
+    .forEach(card => {
+      const timerEl = card.querySelector('[data-order-timer]');
+      if (!timerEl) return;
+
+      const createdAtMs = Number(card.dataset.createdAt || 0);
+      if (!createdAtMs) return;
+
+      let elapsedMs = now - createdAtMs;
+      if (elapsedMs < 0) elapsedMs = 0;
+
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+
+      let label;
+      if (minutes < 60) {
+        label =
+          String(minutes).padStart(2, '0') +
+          ':' +
+          String(seconds).padStart(2, '0');
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const remMin = minutes % 60;
+        label = `${hours}h ${String(remMin).padStart(2, '0')}m`;
+      }
+
+      timerEl.textContent = `⏱ ${label}`;
+    });
+}
+
     function renderOrders(orders) {
       currentOrders = orders || [];
       const container = document.getElementById('lineOrdersContainer');
@@ -241,9 +286,19 @@
         const type = (order.type || order.fulfilment || 'pickup').toLowerCase();
         const isHistory = status === 'completed' || status === 'canceled';
 
-        const card = document.createElement('article');
-        card.className = 'line-order-card status-' + status + ' type-' + type;
-        card.dataset.orderId = order.id;
+const card = document.createElement('article');
+card.className = 'line-order-card status-' + status + ' type-' + type;
+card.dataset.orderId = order.id;
+
+// For active (non-history) orders, store a timestamp so we can run a live timer
+if (!isHistory) {
+  const createdAtMs = order.createdAt
+    ? new Date(order.createdAt).getTime()
+    : Date.now();
+  card.dataset.createdAt = String(createdAtMs);
+  card.dataset.timerActive = '1';
+}
+
 
         const itemsHtml = (order.items || []).map(item => {
           const qty = item.quantity || 1;
@@ -292,18 +347,21 @@
           ? '$' + (totalCents / 100).toFixed(2)
           : '';
 
-        card.innerHTML = `
-          <header class="line-order-header">
-            <div>
-              <div class="line-order-id">${order.id || 'Order'}</div>
-              <div class="line-order-meta">
-                <span class="pill pill-${type}">${fulfilLabel}</span>
-                <span class="pill pill-status pill-${status}">${badgeText}</span>
-                <span class="line-order-time">${formatTime(order.createdAt)}</span>
-              </div>
-            </div>
-            ${totalText ? `<div class="line-order-total">${totalText}</div>` : ''}
-          </header>
+card.innerHTML = `
+  <header class="line-order-header">
+    <div>
+      <div class="line-order-id">${order.id || 'Order'}</div>
+      <div class="line-order-meta">
+        <span class="pill pill-${type}">${fulfilLabel}</span>
+        <span class="pill pill-status pill-${status}">${badgeText}</span>
+        <span class="line-order-time">${formatTime(order.createdAt)}</span>
+        ${!isHistory ? `
+          <span class="line-order-timer" data-order-timer>⏱ 00:00</span>
+        ` : ''}
+      </div>
+    </div>
+    ${totalText ? `<div class="line-order-total">${totalText}</div>` : ''}
+  </header>
           <div class="line-order-body">
             <div class="line-order-customer">
               ${order.name ? `<div class="line-order-name">${order.name}</div>` : ''}
@@ -320,12 +378,16 @@
           </footer>
         `;
 
-        container.appendChild(card);
-      }
-    }
+    container.appendChild(card);
+  }
 
-    // ------------------------- API calls ------------------------------
-    async function fetchOrders() {
+  // Make sure the elapsed-time timers are running
+  startOrderTimers();
+}
+
+// ------------------------- API calls ------------------------------
+async function fetchOrders() {
+
       try {
         const res = await fetch(KG_API_BASE + '/line-orders?includeHistory=1', {
           cache: 'no-store',
