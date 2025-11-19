@@ -134,14 +134,14 @@ const sides = [
   {
     id: 'cassava_leaf',
     name: 'Cassava Leaf',
-    price: 16.5,
+    price: 21.50,
     description: 'Traditional Liberian stew made with cassava leaves.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
   {
     id: 'potato_greens',
     name: 'Potato Greens & White Rice',
-    price: 16.5,
+    price: 21.50,
     description: 'Savory potato greens served with fluffy white rice.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
