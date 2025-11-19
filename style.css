@@ -516,10 +516,6 @@ body {
     z-index: 1002;
   }
 
-  /* NEW: when user is in mobile checkout, hide header to free space */
-  body.mobile-checkout-active .header {
-    display: none;
-  }
 
   /* NEW: when mobile cart drawer is open, also hide header
      so the first cart item is fully visible */
@@ -547,6 +543,25 @@ body {
     width: 100%;
     text-align: center;
   }
+    /* Mobile checkout: keep a slim header bar (no logo), but keep order type,
+     Grill Points and the Continue shopping / Cart button visible */
+  body.mobile-checkout-active .brand-block {
+    display: none;            /* hides logo + “KG Grill Kitchen” text */
+  }
+
+  body.mobile-checkout-active .header-inner {
+    gap: 0.25rem;             /* tighten spacing a bit */
+  }
+
+  body.mobile-checkout-active #viewCartBtn {
+    width: 100%;              /* full-width green button in the header */
+  }
+
+  /* Make sure the checkout form starts *under* the header bar on mobile */
+  body.mobile-checkout-active #checkoutForm {
+    margin-top: 4.5rem;
+  }
+
 }
 
 
