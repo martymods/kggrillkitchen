@@ -1,0 +1,1048 @@
+/*
+ * KG Grill Kitchen – styles
+ *
+ * This stylesheet defines the look and feel for the KG Grill Kitchen ordering
+ * site. The design favours a clean white background with green accents,
+ * mirroring the fresh ingredients of a grill kitchen. All components are
+ * responsive and work on both desktop and mobile sizes. You can tweak
+ * variables in the :root block to adjust colours globally.
+ */
+
+:root {
+  --primary-bg: #ffffff;
+  --primary-fg: #2f2f2f;
+  --accent: #2e8b57; /* sea green */
+  --accent-hover: #46a96e;
+  --light-bg: #f5f5f5;
+  --border-radius: 8px;
+  --max-width: 1200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  line-height: 1.5;
+}
+
+/* Header styles */
+.header {
+  background: var(--light-bg);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;   /* IMPORTANT */
+}
+
+
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.site-logo {
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* For smaller phones, shrink the logo a bit */
+@media (max-width: 480px) {
+  .site-logo {
+    height: 40px;
+  }
+
+  .site-title {
+    font-size: 1.3rem;
+  }
+}
+
+.site-title {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Order type selector */
+.order-type {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+.order-type-label {
+  white-space: nowrap;
+}
+.order-type label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 0.25rem;
+}
+.order-type input[type="radio"] {
+  margin: 0;
+}
+
+/* Cart button */
+.view-cart-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.view-cart-btn:hover {
+  background: var(--accent-hover);
+}
+
+
+/* Main content container */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Menu sections */
+.menu-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+.menu-item {
+  background: var(--light-bg);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.1s ease;
+}
+.menu-item:hover {
+  transform: translateY(-4px);
+}
+.menu-item img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+.menu-content {
+  padding: 0.8rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.menu-content h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  color: var(--primary-fg);
+}
+.menu-content p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  flex-grow: 1;
+}
+.menu-content .price {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+.menu-content button {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.menu-content button:hover {
+  background: var(--accent-hover);
+}
+
+/* Cart panel */
+.cart-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 320px;
+  height: 100%;
+  background: var(--light-bg);
+  box-shadow: -2px 0 8px rgba(0,0,0,0.5);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+.cart-panel.open {
+  transform: translateX(0);
+}
+
+.cart-header {
+  padding: 1rem;
+  background: var(--accent);
+  color: var(--primary-bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cart-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.cart-header button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+/* Continue shopping button inside cart header */
+.continue-shopping-btn {
+  background: var(--primary-bg);
+  color: var(--accent);
+  border: 1px solid var(--primary-bg);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+.continue-shopping-btn:hover {
+  background: var(--light-bg);
+  border-color: var(--accent);
+}
+
+.cart-items {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cart-item img {
+  width: 50px;
+  height: 50px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.cart-item-details {
+  flex-grow: 1;
+}
+.cart-item-details h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+.cart-item-details .quantity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.cart-item-details .quantity button {
+  background: var(--accent);
+  border: none;
+  color: var(--primary-bg);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.cart-item-details .price {
+  margin-top: 0.25rem;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.cart-footer {
+  padding: 1rem;
+  background: var(--light-bg);
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.totals-row {
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.grand-total {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.checkout-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.7rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+.checkout-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Overlay for checkout */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+.overlay.show {
+  display: flex;
+}
+.checkout-form {
+  background: var(--light-bg);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  color: var(--primary-fg);
+  position: relative;
+}
+.checkout-form h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--accent);
+  font-size: 1.4rem;
+}
+.checkout-form label {
+  display: block;
+  margin-top: 0.5rem;
+}
+.checkout-form input,
+.checkout-form textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+.checkout-error {
+  color: #a00;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+/* Delivery map and summary */
+.delivery-map {
+  height: 200px;
+  margin-top: 0.5rem;
+}
+.distance-summary {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Payment fieldset */
+.payment-fieldset {
+  margin-top: 1rem;
+  border: none;
+  padding: 0;
+}
+.payment-fieldset legend {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+.card-element {
+  background: #fff;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  min-height: 40px;
+}
+.payment-message {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Limit overlay height and allow scrolling on mobile & desktop */
+.cart-drawer,
+.checkout-panel,
+.checkout-form {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Keep header fixed inside the drawer if you have one */
+.cart-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+}
+
+/* Give breathing room for the pay button to be fully visible */
+.payment { padding-bottom: 16px; }
+
+
+.place-order-btn {
+  background: var(--accent);
+  color: var(--primary-bg);
+  border: none;
+  padding: 0.7rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+.place-order-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Tip section styling */
+.tip-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+.tip-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.tip-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+.tip-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.tip-button {
+  background: var(--light-bg);
+  color: var(--primary-fg);
+  border: 1px solid var(--accent);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.tip-button:hover {
+  background: var(--accent);
+  color: var(--primary-bg);
+}
+.tip-button.selected {
+  background: var(--accent);
+  color: var(--primary-bg);
+}
+.custom-tip-container {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.custom-tip-container.hidden {
+  display: none;
+}
+.custom-tip-container input {
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.tip-summary {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--primary-fg);
+}
+
+@media (max-width: 600px) {
+  /* Cart drawer: full width, but always sits under the header bar */
+  .cart-panel {
+    width: 100%;
+    top: 4.5rem;                    /* height of the slim header */
+    height: calc(100% - 4.5rem);    /* fill the rest of the screen */
+  }
+
+  /* Keep header visible and sticky at the very top */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 1002;
+  }
+
+  /* Stack header content so everything fits on small phones */
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .brand-block {
+    justify-content: flex-start;
+  }
+
+  .order-type {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .view-cart-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Mobile checkout: slim the header by hiding the logo,
+     but keep order type, Grill Points and Continue Shopping visible */
+  body.mobile-checkout-active .brand-block {
+    display: none;
+  }
+
+  body.mobile-checkout-active .header-inner {
+    gap: 0.25rem;
+  }
+
+  body.mobile-checkout-active #viewCartBtn {
+    width: 100%;
+  }
+
+  /* Make sure the checkout form starts below the header bar */
+  body.mobile-checkout-active #checkoutForm {
+    margin-top: 4.5rem;
+  }
+
+    /* Mobile: move discount badge to top-right and shrink it */
+  .inline-discount-badge {
+    position: absolute;
+    top: 0.5rem;        /* tweak if you want it a bit higher/lower */
+    right: 0.75rem;
+    margin-top: 0;      /* no extra space in the flow */
+  }
+
+  .inline-discount-badge img {
+    max-width: 70px;    /* smaller starburst on phones */
+  }
+
+}
+
+
+
+/* Hide the default Leaflet attribution to keep the map clean */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Free side and sauce selectors styling inside the cart */
+.cart-item-details .free-side-select,
+.cart-item-details .sauce-select {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+}
+.cart-item-details .free-side-select label,
+.cart-item-details .sauce-select label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.cart-item-details select {
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  #continueShoppingBtn {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+}
+
+/* When splash is visible, hide the app content and lock scroll */
+body.show-splash .app-content {
+  display: none;
+}
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.splash-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.splash-inner {
+  text-align: center;
+}
+
+.splash-logo {
+  width: 160px;
+  max-width: 60vw;
+  animation: splash-pulse 1.5s ease-in-out infinite;
+}
+
+.splash-text {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Pulsing logo */
+@keyframes splash-pulse {
+  0%   { transform: scale(1);   opacity: 0.95; }
+  50%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1);   opacity: 0.95; }
+}
+
+.apple-pay-btn {
+  background: #000000;
+  color: #ffffff;
+  border-radius: 999px;
+  width: 100%;
+  padding: 10px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.apple-pay-btn:hover {
+  filter: brightness(1.1);
+}
+
+.grill-points-badge {
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cart-upsell {
+  margin: 10px 0 0;
+  padding: 10px;
+  border-top: 1px dashed #ccc;
+  font-size: 0.9rem;
+}
+
+.cart-upsell-text {
+  margin: 0 0 6px;
+}
+
+.cart-upsell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cart-upsell-btn {
+  border: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #198754;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.grill-points-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.9);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 9999;
+}
+
+.grill-points-toast.visible {
+  opacity: 1;
+}
+
+/* ---------------------- In-line / in-store notice ---------------------- */
+.inline-notice {
+  background: #fff8e1;
+  border-left: 4px solid var(--accent);
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* ---------------------- Line board (line.html) ------------------------- */
+.line-page .line-main {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.line-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.line-header-role-hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.btn-outline.small {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* Tabs */
+.line-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.line-tab {
+  border: 1px solid var(--accent);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.line-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.line-tab-count {
+  font-weight: 600;
+}
+
+/* Orders list */
+.line-orders-wrapper {
+  min-height: 50vh;
+}
+
+.line-empty {
+  text-align: center;
+  color: #777;
+  padding: 2rem 1rem;
+}
+
+.line-orders {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .line-orders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.line-order-card {
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.line-order-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.line-order-id {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.line-order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  align-items: center;
+}
+
+.line-order-time {
+  color: #666;
+}
+
+.line-order-timer {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #ffe5e5;      /* light red pill */
+  color: #b71c1c;           /* urgent red text */
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
+.line-order-total {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Pills */
+.pill {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid transparent;
+}
+
+.pill-pickup {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.pill-delivery {
+  background: #e3f2fd;
+  border-color: #bbdefb;
+}
+
+.pill-inline {
+  background: #fff3e0;
+  border-color: #ffe0b2;
+}
+
+/* Stronger card color coding by fulfilment type */
+.line-order-card.type-pickup {
+  border-left: 6px solid #43a047; /* green */
+  background: #f3fbf4;
+}
+
+.line-order-card.type-delivery {
+  border-left: 6px solid #1e88e5; /* blue */
+  background: #f0f6ff;
+}
+
+.line-order-card.type-inline {
+  border-left: 6px solid #fb8c00; /* orange */
+  background: #fff8ec;
+}
+
+
+.pill-status {
+  text-transform: capitalize;
+}
+
+.pill-needs_action {
+  background: #fff3e0;
+  border-color: #ffcc80;
+}
+
+.pill-in_progress {
+  background: #e3f2fd;
+  border-color: #90caf9;
+}
+
+.pill-ready {
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+}
+
+.pill-completed {
+  background: #e0f2f1;
+  border-color: #80cbc4;
+}
+
+.pill-canceled {
+  background: #ffebee;
+  border-color: #ffcdd2;
+}
+
+.line-order-body {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 0.4rem;
+}
+
+.line-order-customer {
+  font-size: 0.85rem;
+  color: #444;
+  margin-bottom: 0.3rem;
+}
+
+.line-order-name {
+  font-weight: 600;
+}
+
+.line-order-items {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.line-order-items li + li {
+  margin-top: 0.15rem;
+}
+
+.line-item-meta {
+  color: #666;
+  font-size: 0.78rem;
+}
+
+.line-order-notes {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.line-order-footer {
+  margin-top: 0.4rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.line-order-history-times {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.line-order-history-times div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.line-order-history-times strong {
+  font-weight: 600;
+}
+
+
+.line-btn {
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.line-btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.line-btn.subtle {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+/* Small badge when in-store discounts are active */
+.inline-discount-badge {
+  margin-top: 0.35rem;
+}
+
+.inline-discount-badge img {
+  display: block;
+  max-width: 120px; /* keep it small in the header */
+  height: auto;
+}
+
+/* Desktop default */
+.inline-discount-badge img {
+  max-width: 120px;
+}
+
+/* Mobile placement */
+@media (max-width: 600px) {
+  .inline-discount-badge {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.5rem;
+  }
+
+  .inline-discount-badge img {
+    max-width: 65px;  /* smaller on phones */
+    height: auto;
+  }
+}
