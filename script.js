@@ -508,16 +508,26 @@ let currentClientSecret = null;
 function computeTotals() {
   // Subtotal is sum of unit price × quantity for all cart items
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Service & tax: simple 10% of subtotal for this demo
-  const fees = subtotal * 0.1;
-  // Delivery fee: use precomputed deliveryFee when order type is delivery
+
+  // Determine order type
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+
+  // Service & tax: 0 for in-line / in-store, 10% for pickup / delivery
+  let fees = 0;
+  if (orderType !== 'inline') {
+    fees = subtotal * 0.1;
+  }
+
+  // Delivery fee: only for delivery
   const delivery = orderType === 'delivery' ? (deliveryFee || 0) : 0;
-  // Tip amount: if pickup, tip is always 0
+
+  // Tip amount: only for delivery
   const tip = orderType === 'delivery' ? (currentTipAmount || 0) : 0;
+
   const total = subtotal + fees + delivery + tip;
   return { subtotal, fees, deliveryFee: delivery, tip, grand: total };
 }
+
 
 /* --------------------------------------------------------------------------
  * API base helper
@@ -1008,64 +1018,85 @@ function updateQuantity(itemId, delta) {
  * visibility of delivery and fees rows in the cart.
  */
 function updateCartTotals() {
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  let total = subtotal;
+  // Use the same totals helper everywhere so UI and backend stay in sync
+  const totals = computeTotals();
+  const subtotal = totals.subtotal;
+  let total = totals.grand;
 
-    // 🎮 Update cart-level upsell suggestions
+  // 🎮 Update cart-level upsell suggestions
   updateCartUpsell(subtotal);
 
-  // Determine order type
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
-  // Delivery fee
+
+  // Delivery fee row
   const deliveryRow = document.getElementById('deliveryRow');
   const deliveryFeeEl = document.getElementById('cartDeliveryFee');
-  if (orderType === 'delivery' && deliveryFee > 0) {
+  if (orderType === 'delivery' && totals.deliveryFee > 0) {
     deliveryRow.hidden = false;
-    deliveryFeeEl.textContent = formatCurrency(deliveryFee);
-    total += deliveryFee;
+    if (deliveryFeeEl) {
+      deliveryFeeEl.textContent = formatCurrency(totals.deliveryFee);
+    }
   } else {
     deliveryRow.hidden = true;
+    if (deliveryFeeEl) {
+      deliveryFeeEl.textContent = formatCurrency(0);
+    }
   }
-  // Basic estimate for service fee and tax (e.g. 10% combined)
+
+  // Service & tax row – HIDDEN for in-line / in-store
   const feesRow = document.getElementById('feesRow');
   const cartFees = document.getElementById('cartFees');
-  const fees = subtotal * 0.1;
-  if (subtotal > 0) {
-    feesRow.hidden = false;
-    cartFees.textContent = formatCurrency(fees);
-    total += fees;
+  if (orderType === 'inline' || subtotal === 0 || totals.fees <= 0) {
+    if (feesRow) feesRow.hidden = true;
+    if (cartFees) cartFees.textContent = formatCurrency(0);
   } else {
-    feesRow.hidden = true;
+    if (feesRow) feesRow.hidden = false;
+    if (cartFees) cartFees.textContent = formatCurrency(totals.fees);
   }
-  // Include tip in total if applicable
-  const tipAmount = currentTipAmount || 0;
-  total += tipAmount;
+
+  const tipAmount = totals.tip || 0;
+
   // Update displayed subtotal and total
   document.getElementById('cartSubtotal').textContent = formatCurrency(subtotal);
   document.getElementById('cartTotal').textContent = formatCurrency(total);
-  // Update PaymentRequest total for Apple Pay/Google Pay
+
+  // Update PaymentRequest total for Apple Pay / Google Pay
   if (paymentRequest && typeof paymentRequest.update === 'function') {
     const displayItems = [];
     displayItems.push({ label: 'Subtotal', amount: Math.round(subtotal * 100) });
-    if (orderType === 'delivery' && deliveryFee > 0) {
-      displayItems.push({ label: 'Delivery fee', amount: Math.round(deliveryFee * 100) });
+
+    if (orderType === 'delivery' && totals.deliveryFee > 0) {
+      displayItems.push({
+        label: 'Delivery fee',
+        amount: Math.round(totals.deliveryFee * 100),
+      });
     }
-    if (subtotal > 0) {
-      displayItems.push({ label: 'Service & tax', amount: Math.round(fees * 100) });
+
+    // Only show Service & tax for pickup / delivery, never for in-line
+    if (orderType !== 'inline' && totals.fees > 0) {
+      displayItems.push({
+        label: 'Service & tax',
+        amount: Math.round(totals.fees * 100),
+      });
     }
+
     if (tipAmount > 0) {
-      displayItems.push({ label: 'Tip', amount: Math.round(tipAmount * 100) });
+      displayItems.push({
+        label: 'Tip',
+        amount: Math.round(tipAmount * 100),
+      });
     }
+
     paymentRequest.update({
       total: { label: 'KG Grill Kitchen', amount: Math.round(total * 100) },
       displayItems,
     });
   }
 
-  // Update the tip UI now that totals may have changed. This recalculates
-  // percentage tip amounts and refreshes button labels and the summary.
+  // Recompute tip labels/percentages since totals changed
   updateTipSection();
 }
+
 
 /**
  * Update the tip section UI. When the order type is delivery and there are
@@ -1398,6 +1429,8 @@ function updateOrderType() {
   const addressEl = document.getElementById('deliveryAddress');
   const inlineNoticeEl = document.getElementById('inlinePayNotice');
   const paymentFieldset = document.getElementById('paymentFieldset');
+  const inlineDiscountBadge = document.getElementById('inlineDiscountBadge');
+
 
   if (orderType === 'delivery') {
     deliveryFields.hidden = false;
@@ -1418,13 +1451,17 @@ function updateOrderType() {
     updateCartTotals();
   }
 
-  // Inline / in-store UI: show notice + hide payment section
-  if (inlineNoticeEl) {
-    inlineNoticeEl.hidden = orderType !== 'inline';
-  }
-  if (paymentFieldset) {
-    paymentFieldset.hidden = orderType === 'inline';
-  }
+// Inline / in-store UI: show notice + hide payment section
+if (inlineNoticeEl) {
+  inlineNoticeEl.hidden = orderType !== 'inline';
+}
+if (paymentFieldset) {
+  paymentFieldset.hidden = orderType === 'inline';
+}
+if (inlineDiscountBadge) {
+  inlineDiscountBadge.hidden = orderType !== 'inline';
+}
+
 
 // Update submit button label for inline orders
 const placeBtn = document.getElementById('placeOrderButton');
