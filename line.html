@@ -347,6 +347,44 @@ if (!isHistory) {
           ? '$' + (totalCents / 100).toFixed(2)
           : '';
 
+        // For completed/canceled orders in the History filter, show how long each stage took
+        let historyTimingHtml = '';
+        if (isHistory && order.statusDurations) {
+          const d = order.statusDurations;
+
+          function formatDuration(ms) {
+            if (!ms || ms <= 0) return '--';
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            if (minutes < 60) {
+              return (
+                String(minutes).padStart(2, '0') +
+                ':' +
+                String(seconds).padStart(2, '0')
+              );
+            }
+
+            const hours = Math.floor(minutes / 60);
+            const remMin = minutes % 60;
+            return `${hours}h ${String(remMin).padStart(2, '0')}m`;
+          }
+
+          const needsAction = formatDuration(d.needs_action_ms);
+          const inProgress  = formatDuration(d.in_progress_ms);
+          const ready       = formatDuration(d.ready_ms);
+
+          historyTimingHtml = `
+            <div class="line-order-history-times">
+              <div><span>Needs action</span><strong>${needsAction}</strong></div>
+              <div><span>In progress</span><strong>${inProgress}</strong></div>
+              <div><span>Ready</span><strong>${ready}</strong></div>
+            </div>
+          `;
+        }
+
+
 card.innerHTML = `
   <header class="line-order-header">
     <div>
@@ -356,7 +394,7 @@ card.innerHTML = `
         <span class="pill pill-status pill-${status}">${badgeText}</span>
         <span class="line-order-time">${formatTime(order.createdAt)}</span>
         ${!isHistory ? `
-          <span class="line-order-timer" data-order-timer>⏱ 00:00</span>
+          <span class="line-order-timer" data-order-timer></span>
         ` : ''}
       </div>
     </div>
@@ -372,6 +410,7 @@ card.innerHTML = `
               ${itemsHtml}
             </ul>
             ${order.notes ? `<div class="line-order-notes">📝 ${order.notes}</div>` : ''}
+            ${historyTimingHtml}
           </div>
           <footer class="line-order-footer">
             ${actionsHtml}
