@@ -877,6 +877,11 @@ function openCart() {
   const isMobile = window.matchMedia('(max-width: 600px)').matches;
   const headerCartBtn = document.getElementById('viewCartBtn');
 
+  // NEW: on mobile, hide the main header so the cart can use full height
+  if (isMobile) {
+    document.body.classList.add('cart-open-mobile');
+  }
+
   if (isMobile && headerCartBtn) {
     // Remember original label once
     if (!headerCartBtn.dataset.originalLabel) {
@@ -887,6 +892,7 @@ function openCart() {
 }
 
 
+
 /**
  * Close the cart panel.
  * On mobile, restore the header Cart button text and scroll back to the menu.
@@ -895,6 +901,9 @@ function closeCart(scrollToMenu = false) {
   const cartPanel = document.getElementById('cartPanel');
   cartPanel.classList.remove('open');
   cartPanel.setAttribute('aria-hidden', 'true');
+
+  // NEW: always remove the mobile cart-open class
+  document.body.classList.remove('cart-open-mobile');
 
   const isMobile = window.matchMedia('(max-width: 600px)').matches;
   const headerCartBtn = document.getElementById('viewCartBtn');
@@ -914,6 +923,7 @@ function closeCart(scrollToMenu = false) {
     menuTop.scrollIntoView({ behavior: 'smooth' });
   }
 }
+
 
 
 function updateCartButton() {
