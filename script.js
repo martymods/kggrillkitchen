@@ -49,7 +49,7 @@ const mains = [
   {
     id: 'chicken_quarter',
     name: 'Chicken Quarter Legs',
-    price: 7.5,
+    price: 18.0,
     description: 'Marinated and grilled chicken quarter legs.',
     image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
   },
