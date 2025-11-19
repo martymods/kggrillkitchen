@@ -1149,6 +1149,16 @@ function updateOrderType() {
     paymentFieldset.hidden = orderType === 'inline';
   }
 
+// Update submit button label for inline orders
+const placeBtn = document.getElementById('placeOrderButton');
+if (placeBtn) {
+  if (orderType === 'inline') {
+    placeBtn.textContent = 'Place in line';
+  } else {
+    placeBtn.textContent = 'Pay & place order';
+  }
+}
+
   // Persist selection
   saveField('kg_orderType', orderType);
   // Update tip UI when order type changes
