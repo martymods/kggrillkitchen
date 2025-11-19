@@ -75,28 +75,64 @@
     }
     const KG_API_BASE = getApiBase();
 
-        // ------------------------- audio + speech ------------------------
-    // New order sound (plays when a new active order appears)
-    const newOrderSound = (() => {
-      try {
-        const a = new Audio('audio/newOrder.mp3');
-        a.preload = 'auto';
-        return a;
-      } catch (e) {
-        console.warn('Audio not supported', e);
-        return null;
-      }
-    })();
+// ------------------------- audio + speech ------------------------
+// New order sound (plays when a new active order appears)
+const newOrderSound = (() => {
+  try {
+    const a = new Audio('audio/newOrder.mp3');
+    a.preload = 'auto';
+    return a;
+  } catch (e) {
+    console.warn('Audio not supported', e);
+    return null;
+  }
+})();
 
-    function playNewOrderSound() {
-      if (!newOrderSound) return;
-      try {
+// iOS Safari: audio + speech are blocked until first user interaction.
+// We "unlock" them on the first tap/click.
+let audioUnlocked = false;
+
+function unlockAudioAndSpeech() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+
+  // Prime the order sound silently
+  if (newOrderSound) {
+    try {
+      newOrderSound.muted = true;
+      newOrderSound.currentTime = 0;
+      newOrderSound.play().then(() => {
+        newOrderSound.pause();
         newOrderSound.currentTime = 0;
-        newOrderSound.play().catch(() => {});
-      } catch (e) {
-        console.warn('Could not play new order sound', e);
-      }
+        newOrderSound.muted = false;
+      }).catch(() => {});
+    } catch (e) {
+      // ignore
     }
+  }
+
+  // Prime speech synthesis with a silent utterance
+  if ('speechSynthesis' in window) {
+    try {
+      const dummy = new SpeechSynthesisUtterance('');
+      dummy.volume = 0;
+      window.speechSynthesis.speak(dummy);
+    } catch (e) {
+      console.warn('speechSynthesis warm-up failed', e);
+    }
+  }
+}
+
+function playNewOrderSound() {
+  if (!newOrderSound) return;
+  try {
+    newOrderSound.currentTime = 0;
+    newOrderSound.play().catch(() => {});
+  } catch (e) {
+    console.warn('Could not play new order sound', e);
+  }
+}
+
 
     // Simple voice picker that prefers Microsoft voices if available
     let cachedVoices = [];
@@ -463,9 +499,20 @@ async function fetchOrders() {
     }
 
     // ------------------------- events --------------------------------
-    document.addEventListener('DOMContentLoaded', () => {
-      // Tab clicks
-      document.querySelectorAll('.line-tab').forEach(btn => {
+document.addEventListener('DOMContentLoaded', () => {
+  // On first tap/click, unlock audio and A.I. voice (needed for iOS Safari)
+  ['click', 'touchstart'].forEach(evt => {
+    document.addEventListener(
+      evt,
+      () => {
+        unlockAudioAndSpeech();
+      },
+      { once: true, passive: true }
+    );
+  });
+
+  // Tab clicks
+  document.querySelectorAll('.line-tab').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.line-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
