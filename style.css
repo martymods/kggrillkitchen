@@ -835,6 +835,19 @@ body.show-splash .app-content {
   color: #666;
 }
 
+.line-order-timer {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #ffe5e5;      /* light red pill */
+  color: #b71c1c;           /* urgent red text */
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
 .line-order-total {
   font-weight: 700;
   font-size: 1rem;
