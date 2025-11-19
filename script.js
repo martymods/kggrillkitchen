@@ -42,7 +42,7 @@ const mains = [
   {
     id: 'chicken_wings',
     name: 'Chicken Wings',
-    price: 16.0,
+    price: 6.0,
     description: 'Crisp fried wings tossed in your choice of sauce.',
     image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
@@ -2231,4 +2231,3 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initStripe();
 
 });
-
