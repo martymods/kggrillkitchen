@@ -143,17 +143,14 @@ function unlockAudioAndSpeech() {
   }
 }
 
-
 function playNewOrderSound() {
-  if (!newOrderSound) return;
   try {
-    newOrderSound.currentTime = 0;
-    newOrderSound.play().catch(() => {});
-  } catch (e) {
-    console.warn('Could not play new order sound', e);
+    const a = new Audio("audio/newOrder.mp3");
+    a.play().catch(e => console.warn("play failed:", e));
+  } catch (err) {
+    console.error("Audio error:", err);
   }
 }
-
 
     // Simple voice picker that prefers Microsoft voices if available
     let cachedVoices = [];
@@ -562,6 +559,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!document.hidden) fetchOrders();
       });
     });
+
+    let lineAudioUnlocked = false;
+
+function unlockLineAudio() {
+  if (lineAudioUnlocked) return;
+  lineAudioUnlocked = true;
+
+  const test = new Audio("audio/newOrder.mp3");
+  test.volume = 0.01;          // must NOT be muted
+  test.currentTime = 0;
+  
+  test.play().then(() => {
+    test.pause();
+  }).catch((e) => {
+    console.warn("Audio unlock failed:", e);
+  });
+
+  // Speech synthesis warm-up
+  if ("speechSynthesis" in window) {
+    try {
+      const dummy = new SpeechSynthesisUtterance("");
+      dummy.volume = 0;
+      speechSynthesis.speak(dummy);
+    } catch (err) {
+      console.warn("Speech warm-up failed:", err);
+    }
+  }
+}
+
+document.addEventListener("touchstart", unlockLineAudio, { once: true });
+document.addEventListener("click", unlockLineAudio, { once: true });
+
   </script>
 </body>
 </html>
