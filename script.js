@@ -518,10 +518,10 @@ function computeTotals() {
     fees = subtotal * 0.1;
   }
 
-  // Delivery fee: only for delivery
+  // ✅ Delivery fee: ONLY for delivery
   const delivery = orderType === 'delivery' ? (deliveryFee || 0) : 0;
 
-  // Tip amount: only for delivery
+  // ✅ Tip: ONLY for delivery
   const tip = orderType === 'delivery' ? (currentTipAmount || 0) : 0;
 
   const total = subtotal + fees + delivery + tip;
