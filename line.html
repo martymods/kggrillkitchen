@@ -96,16 +96,36 @@ function unlockAudioAndSpeech() {
   if (audioUnlocked) return;
   audioUnlocked = true;
 
-  // Prime the order sound silently
+  // On iOS Safari we need a *real* (even if very quiet) playback
   if (newOrderSound) {
     try {
-      newOrderSound.muted = true;
+      const prevMuted  = newOrderSound.muted;
+      const prevVolume = (typeof newOrderSound.volume === 'number')
+        ? newOrderSound.volume
+        : 1;
+
+      // Play quietly but not muted so Safari counts this as user-initiated audio
+      newOrderSound.muted = false;
+      newOrderSound.volume = 0.01;
       newOrderSound.currentTime = 0;
+
       newOrderSound.play().then(() => {
-        newOrderSound.pause();
-        newOrderSound.currentTime = 0;
-        newOrderSound.muted = false;
-      }).catch(() => {});
+        // Stop it shortly after and restore original settings
+        setTimeout(() => {
+          try {
+            newOrderSound.pause();
+            newOrderSound.currentTime = 0;
+            newOrderSound.volume = prevVolume;
+            newOrderSound.muted = prevMuted;
+          } catch (e) {
+            // ignore restore errors
+          }
+        }, 120); // ~0.1s is enough to "unlock" audio
+      }).catch(() => {
+        // If it fails, just restore volume/mute; later plays may still work
+        newOrderSound.volume = prevVolume;
+        newOrderSound.muted = prevMuted;
+      });
     } catch (e) {
       // ignore
     }
@@ -122,6 +142,7 @@ function unlockAudioAndSpeech() {
     }
   }
 }
+
 
 function playNewOrderSound() {
   if (!newOrderSound) return;
