@@ -43,7 +43,9 @@ body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap; /* allow wrapping on smaller screens */
+  position: relative;           /* NEW: so the badge can be positioned inside */
 }
+
 
 .brand-block {
   display: flex;
@@ -558,6 +560,19 @@ body {
   body.mobile-checkout-active #checkoutForm {
     margin-top: 4.5rem;
   }
+
+    /* Mobile: move discount badge to top-right and shrink it */
+  .inline-discount-badge {
+    position: absolute;
+    top: 0.5rem;        /* tweak if you want it a bit higher/lower */
+    right: 0.75rem;
+    margin-top: 0;      /* no extra space in the flow */
+  }
+
+  .inline-discount-badge img {
+    max-width: 70px;    /* smaller starburst on phones */
+  }
+
 }
 
 
