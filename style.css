@@ -42,9 +42,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap; /* allow wrapping on smaller screens */
-  position: relative;           /* NEW: so the badge can be positioned inside */
+  flex-wrap: wrap;
+  position: relative;   /* IMPORTANT */
 }
+
 
 
 .brand-block {
@@ -1025,4 +1026,23 @@ body.show-splash .app-content {
   display: block;
   max-width: 120px; /* keep it small in the header */
   height: auto;
+}
+
+/* Desktop default */
+.inline-discount-badge img {
+  max-width: 120px;
+}
+
+/* Mobile placement */
+@media (max-width: 600px) {
+  .inline-discount-badge {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.5rem;
+  }
+
+  .inline-discount-badge img {
+    max-width: 65px;  /* smaller on phones */
+    height: auto;
+  }
 }
