@@ -75,8 +75,96 @@
     }
     const KG_API_BASE = getApiBase();
 
+        // ------------------------- audio + speech ------------------------
+    // New order sound (plays when a new active order appears)
+    const newOrderSound = (() => {
+      try {
+        const a = new Audio('audio/newOrder.mp3');
+        a.preload = 'auto';
+        return a;
+      } catch (e) {
+        console.warn('Audio not supported', e);
+        return null;
+      }
+    })();
+
+    function playNewOrderSound() {
+      if (!newOrderSound) return;
+      try {
+        newOrderSound.currentTime = 0;
+        newOrderSound.play().catch(() => {});
+      } catch (e) {
+        console.warn('Could not play new order sound', e);
+      }
+    }
+
+    // Simple voice picker that prefers Microsoft voices if available
+    let cachedVoices = [];
+
+    function refreshVoices() {
+      if (!('speechSynthesis' in window)) return;
+      cachedVoices = window.speechSynthesis.getVoices() || [];
+    }
+
+    function getMicrosoftVoice() {
+      if (!('speechSynthesis' in window)) return null;
+      if (!cachedVoices.length) {
+        refreshVoices();
+      }
+
+      // Prefer a Microsoft English voice if present (Edge / Windows)
+      let voice =
+        cachedVoices.find(v => /microsoft/i.test(v.name) && /en/i.test(v.lang)) ||
+        cachedVoices.find(v => /microsoft/i.test(v.name)) ||
+        cachedVoices.find(v => /en/i.test(v.lang)) ||
+        cachedVoices[0];
+
+      return voice || null;
+    }
+
+    function speakOrderReady(name) {
+      if (!('speechSynthesis' in window)) return;
+      const text = name
+        ? `Order for ${name} is ready at K G Grill Kitchen.`
+        : `An order is ready at K G Grill Kitchen.`;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voice = getMicrosoftVoice();
+      if (voice) {
+        utterance.voice = voice;
+      }
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn('speechSynthesis failed', e);
+      }
+    }
+
+    // Prime voices on load where supported
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = refreshVoices;
+      refreshVoices();
+    }
+
+
     let currentFilter = 'all';
     let currentOrders = [];
+
+        function findNewActiveOrders(prev, next) {
+      const prevIds = new Set((prev || []).map(o => o.id));
+      return (next || []).filter(o => {
+        if (!o || !o.id) return false;
+        if (prevIds.has(o.id)) return false;
+
+        const status = String(o.status || 'needs_action').toLowerCase();
+        const isHistory = status === 'completed' || status === 'canceled';
+        return !isHistory; // only "live" orders trigger sound
+      });
+    }
+
 
     // ------------------------- rendering ------------------------------
     function formatTime(ts) {
@@ -244,11 +332,21 @@
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        renderOrders(data.orders || []);
+
+        const nextOrders = data.orders || [];
+        const newActive = findNewActiveOrders(currentOrders, nextOrders);
+
+        renderOrders(nextOrders);
+
+        // Play sound if any brand-new active orders just appeared
+        if (newActive.length > 0) {
+          playNewOrderSound();
+        }
       } catch (err) {
         console.error('Failed to load line orders', err);
       }
     }
+
 
     async function updateOrderStatus(id, action) {
       let status;
@@ -259,14 +357,21 @@
       else return;
 
       try {
-        const res = await fetch(KG_API_BASE + '/line-orders/' + encodeURIComponent(id) + '/status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        });
+        const res = await fetch(
+          KG_API_BASE + '/line-orders/' + encodeURIComponent(id) + '/status',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          }
+        );
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
+
+        let updatedOrder = null;
+
         if (data.order) {
+          updatedOrder = data.order;
           const idx = currentOrders.findIndex(o => o.id === data.order.id);
           if (idx >= 0) {
             currentOrders[idx] = data.order;
@@ -276,6 +381,18 @@
           renderOrders(currentOrders);
         } else {
           await fetchOrders();
+        }
+
+        // When an order is marked "ready", speak their name so the room hears it
+        if (status === 'ready') {
+          const orderToAnnounce =
+            updatedOrder ||
+            currentOrders.find(o => o.id === id) ||
+            null;
+          const name = orderToAnnounce && orderToAnnounce.name
+            ? orderToAnnounce.name
+            : '';
+          speakOrderReady(name);
         }
       } catch (err) {
         console.error('Failed to update order status', err);
