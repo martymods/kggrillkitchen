@@ -17,14 +17,14 @@
 // latest menu: most mains are $16 or higher, burgers and patties are
 // lower, and fish dishes are premium priced.
 const mains = [
-  {
-    id: 'beef_ribs',
-    name: 'Beef Ribs',
-    price: 20.0,
-    description: 'Slow‑cooked ribs glazed with our signature BBQ sauce.',
-    // Use the uploaded image for beef ribs
-    image: '/pictures/beefRibs.jpeg',
-  },
+{
+  id: 'beef_ribs',
+  name: 'Beef Ribs',
+  price: 16.0, // was 20.0
+  description: 'Slow-cooked ribs glazed with our signature BBQ sauce.',
+  image: '/pictures/beefRibs.jpeg',
+},
+
   {
     id: 'beef_burgers',
     name: 'Beef Burgers',
@@ -46,13 +46,14 @@ const mains = [
     description: 'Crisp fried wings tossed in your choice of sauce.',
     image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
-  {
-    id: 'chicken_quarter',
-    name: 'Chicken Quarter Legs',
-    price: 18.0,
-    description: 'Marinated and grilled chicken quarter legs.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
-  },
+{
+  id: 'chicken_quarter',
+  name: 'Chicken Quarter Legs',
+  price: 18.0, // was 7.5
+  description: 'Marinated and grilled chicken quarter legs.',
+  image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // holder logo
+},
+
   {
     id: 'snapper',
     name: 'Snapper Fish',
@@ -183,10 +184,10 @@ const sides = [
  * Likewise, certain mains let the guest choose a sauce. Use sets to identify
  * these items for easy lookups when adding to the cart and rendering.
  */
-// IDs of mains that allow a free side (all except burgers and patties)
+// IDs of mains that allow a free side (all except burgers, patties, and KG Surprise)
 const freeSideEligibleIds = new Set(
   mains
-    .filter(item => !['beef_burgers', 'beef_patties'].includes(item.id))
+    .filter(item => !['beef_burgers', 'beef_patties', 'kg_mystery'].includes(item.id))
     .map(item => item.id)
 );
 // IDs of mains that allow sauce selection
@@ -582,58 +583,312 @@ function computeDeliveryFee(distanceMiles) {
 }
 
 /**
+ * Portion options for mains that have selectable plate sizes.
+ * We keep separate pricing for online vs in-line / in-store.
+ */
+const portionOptions = {
+  beef_ribs: [
+    { key: '1_rib', label: '1 rib', onlinePrice: 16, inlinePrice: 15 },
+    { key: '2_ribs', label: '2 ribs', onlinePrice: 21, inlinePrice: 20 },
+    { key: '3_ribs', label: '3 ribs', onlinePrice: 26, inlinePrice: 25 },
+  ],
+  chicken_wings: [
+    { key: '2_wings', label: '2 wings', onlinePrice: 16, inlinePrice: 15 },
+    { key: '3_wings', label: '3 wings', onlinePrice: 19, inlinePrice: 18 },
+    { key: '4_wings', label: '4 wings', onlinePrice: 22, inlinePrice: 20 },
+  ],
+  chicken_quarter: [
+    // Online: 1 = 18, 2 = 26, 3 = 32
+    // In-line: 1 = 12, then +7 per added leg → 12, 19, 26
+    { key: '1_leg', label: '1 leg', onlinePrice: 18, inlinePrice: 12 },
+    { key: '2_legs', label: '2 legs', onlinePrice: 26, inlinePrice: 19 },
+    { key: '3_legs', label: '3 legs', onlinePrice: 32, inlinePrice: 26 },
+  ],
+  chicken_kabobs: [
+    // Chicken, Beef & Shrimp Kabobs platter
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+  ],
+};
+
+/** Current fulfilment type helper */
+function getCurrentOrderType() {
+  return document.querySelector('input[name="orderType"]:checked')?.value || 'pickup';
+}
+
+/**
+ * Get portion + price for a given item and option index / key,
+ * automatically switching between online and inline pricing.
+ */
+function getPortionPriceForOrderType(itemId, portionKeyOrIndex, orderType) {
+  const options = portionOptions[itemId];
+  if (!options || !options.length) return null;
+
+  let opt = null;
+  if (typeof portionKeyOrIndex === 'number') {
+    opt = options[portionKeyOrIndex] || options[0];
+  } else if (typeof portionKeyOrIndex === 'string') {
+    opt = options.find(o => o.key === portionKeyOrIndex) || options[0];
+  } else {
+    opt = options[0];
+  }
+
+  const price =
+    orderType === 'inline' && typeof opt.inlinePrice === 'number'
+      ? opt.inlinePrice
+      : opt.onlinePrice;
+
+  return { opt, price };
+}
+
+/**
+ * Generic inline discount for items that do NOT use portionOptions.
+ * - Always remove $0.50 from X.50 prices (21.50 → 21.00, 3.50 → 3.00).
+ * - Special case: $16 → $15 for “$16 items should be $15 in-line”.
+ */
+function computeInlineBasePrice(basePrice, itemId) {
+  let price = basePrice;
+
+  // Special case: single-piece sides currently $3.50 → $3 in-line
+  if (['side_chicken_wing', 'side_chicken_kabob', 'side_beef_kabob', 'side_shrimp_kabob'].includes(itemId)) {
+    return 3.0;
+  }
+
+  // Remove .50 where it exists
+  const cents = Math.round(price * 100);
+  if (cents % 100 === 50) {
+    price = (cents - 50) / 100;
+  }
+
+  // $16 → $15 for in-line pricing
+  if (Math.abs(price - 16) < 0.001) {
+    price = 15;
+  }
+
+  return price;
+}
+
+/**
+ * Re-apply pricing whenever orderType changes:
+ * - Update menu labels
+ * - Update cart item prices
+ */
+function applyPricingForOrderType() {
+  const orderType = getCurrentOrderType();
+  const allItems = mains.concat(sides);
+
+  // Update menu prices in the visible cards
+  document.querySelectorAll('.menu-item').forEach(card => {
+    const btn = card.querySelector('button[data-id]');
+    const priceEl = card.querySelector('.price');
+    if (!btn || !priceEl) return;
+
+    const id = btn.getAttribute('data-id');
+    const item = allItems.find(i => i.id === id);
+    if (!item) return;
+
+    const selectEl = card.querySelector('.portion-select[data-id="' + id + '"]');
+    let displayPrice;
+
+    if (selectEl && portionOptions[id]) {
+      const index = parseInt(selectEl.value, 10) || 0;
+      const result = getPortionPriceForOrderType(id, index, orderType);
+      displayPrice = result ? result.price : item.price;
+    } else {
+      const base = item.price;
+      displayPrice = orderType === 'inline'
+        ? computeInlineBasePrice(base, id)
+        : base;
+    }
+
+    priceEl.textContent = formatCurrency(displayPrice);
+  });
+
+  // Update cart item prices
+  cart.forEach(ci => {
+    const baseOnline = typeof ci.baseOnlinePrice === 'number' ? ci.baseOnlinePrice : ci.price;
+    const baseInline =
+      typeof ci.baseInlinePrice === 'number'
+        ? ci.baseInlinePrice
+        : computeInlineBasePrice(baseOnline, ci.id);
+
+    ci.baseOnlinePrice = baseOnline;
+    ci.baseInlinePrice = baseInline;
+
+    ci.price = orderType === 'inline' ? baseInline : baseOnline;
+  });
+}
+
+
+/**
  * Render the menu cards for mains and sides into their respective
  * containers.
  */
 function renderMenu() {
   const mainsContainer = document.getElementById('mains-container');
   const sidesContainer = document.getElementById('sides-container');
+  const allItems = mains.concat(sides);
+  const orderType = getCurrentOrderType();
+
   function createCard(item) {
     const card = document.createElement('div');
     card.className = 'menu-item';
+
+    const hasPortions = !!portionOptions[item.id];
+
+    let portionHtml = '';
+    let displayPrice;
+
+    if (hasPortions) {
+      const result = getPortionPriceForOrderType(item.id, 0, orderType);
+      displayPrice = result ? result.price : item.price;
+
+      const options = portionOptions[item.id];
+      portionHtml = `
+        <label class="portion-label">
+          Portion:
+          <select class="portion-select" data-id="${item.id}">
+            ${options
+              .map((opt, idx) => {
+                const p =
+                  orderType === 'inline'
+                    ? opt.inlinePrice
+                    : opt.onlinePrice;
+                return `<option value="${idx}">${opt.label} – ${formatCurrency(p)}</option>`;
+              })
+              .join('')}
+          </select>
+        </label>
+      `;
+    } else {
+      const base = item.price;
+      displayPrice =
+        orderType === 'inline'
+          ? computeInlineBasePrice(base, item.id)
+          : base;
+    }
+
     card.innerHTML = `
       <img src="${item.image}" alt="${item.name}">
       <div class="menu-content">
         <h3>${item.name}</h3>
         <p>${item.description}</p>
-        <div class="price">${formatCurrency(item.price)}</div>
+        <div class="price" data-price-for="${item.id}">${formatCurrency(displayPrice)}</div>
+        ${portionHtml}
         <button data-id="${item.id}">Add to Cart</button>
       </div>
     `;
-    card.querySelector('button').addEventListener('click', () => addToCart(item));
+
+    const btn = card.querySelector('button[data-id]');
+    btn.addEventListener('click', () => {
+      const portions = portionOptions[item.id];
+      let selectedPortion = null;
+
+      if (portions) {
+        const selectEl = card.querySelector('.portion-select[data-id="' + item.id + '"]');
+        const index = selectEl ? parseInt(selectEl.value, 10) || 0 : 0;
+        const result = getPortionPriceForOrderType(item.id, index, getCurrentOrderType());
+        selectedPortion = result ? result.opt : null;
+      }
+
+      addToCart(item, selectedPortion);
+    });
+
+    const selectEl = card.querySelector('.portion-select[data-id="' + item.id + '"]');
+    if (selectEl && portionOptions[item.id]) {
+      selectEl.addEventListener('change', (e) => {
+        const index = parseInt(e.target.value, 10) || 0;
+        const result = getPortionPriceForOrderType(item.id, index, getCurrentOrderType());
+        if (!result) return;
+
+        const priceEl = card.querySelector('.price[data-price-for="' + item.id + '"]');
+        if (priceEl) {
+          priceEl.textContent = formatCurrency(result.price);
+        }
+      });
+    }
+
     return card;
   }
+
+  mainsContainer.innerHTML = '';
   mains.forEach(item => mainsContainer.appendChild(createCard(item)));
+
+  sidesContainer.innerHTML = '';
   sides.forEach(item => sidesContainer.appendChild(createCard(item)));
 }
 
 /**
  * Add an item to the cart and update UI.
  */
-function addToCart(item) {
-  const existing = cart.find(ci => ci.id === item.id);
-  if (existing) {
-    // Increase quantity if the item is already in the cart
-    existing.quantity += 1;
+function addToCart(item, portionOption = null) {
+  const orderType = getCurrentOrderType();
+
+  let baseOnlinePrice = item.price;
+  let baseInlinePrice = null;
+  let plateOptionKey = null;
+  let plateOptionLabel = null;
+  let displayName = item.name;
+
+  if (portionOption) {
+    baseOnlinePrice = portionOption.onlinePrice;
+    baseInlinePrice = portionOption.inlinePrice;
+    plateOptionKey = portionOption.key;
+    plateOptionLabel = portionOption.label;
+    displayName = `${item.name} – ${portionOption.label}`;
   } else {
-    // Create a new cart item with optional sauce/free side fields
-    const cartItem = { ...item, quantity: 1 };
+    baseInlinePrice = computeInlineBasePrice(baseOnlinePrice, item.id);
+  }
+
+  const effectivePrice =
+    orderType === 'inline'
+      ? (typeof baseInlinePrice === 'number' ? baseInlinePrice : baseOnlinePrice)
+      : baseOnlinePrice;
+
+  // Treat different plate options as separate line items
+  const existing = cart.find(ci =>
+    ci.id === item.id &&
+    ((ci.plateOptionKey || null) === (plateOptionKey || null))
+  );
+
+  if (existing) {
+    existing.quantity += 1;
+    existing.price = effectivePrice;
+    existing.baseOnlinePrice = baseOnlinePrice;
+    existing.baseInlinePrice = baseInlinePrice;
+  } else {
+    const cartItem = {
+      ...item,
+      name: displayName,
+      quantity: 1,
+      price: effectivePrice,
+      baseOnlinePrice,
+      baseInlinePrice,
+    };
+
+    if (plateOptionKey) {
+      cartItem.plateOptionKey = plateOptionKey;
+      cartItem.plateOptionLabel = plateOptionLabel;
+    }
+
     if (sauceEligibleIds.has(item.id)) {
       cartItem.sauce = 'none';
     }
     if (freeSideEligibleIds.has(item.id)) {
-      // Default free side to Jollof Rice (first choice)
       cartItem.freeSide = freeSideChoices[0]?.id || '';
     }
+
     cart.push(cartItem);
   }
 
-  // 🎮 Gamification: award Grill Points for every add
+  // 🎮 Gamification: award Grill Points for every add (use original item)
   awardGrillPointsForItem(item);
 
   // Show cart and update UI
   openCart();
   renderCart();
+  updateCartTotals();
   updateCartButton();
 }
 
@@ -1173,7 +1428,13 @@ if (placeBtn) {
   saveField('kg_orderType', orderType);
   // Update tip UI when order type changes
   updateTipSection();
+
+  // Re-apply item pricing for the new order type
+  applyPricingForOrderType();
+  renderCart();
+  updateCartTotals();
 }
+
 
 
 /**
