@@ -521,7 +521,11 @@ body {
     display: none;
   }
 
-
+  /* NEW: when mobile cart drawer is open, also hide header
+     so the first cart item is fully visible */
+  body.cart-open-mobile .header {
+    display: none;
+  }
 
   /* Stack header content vertically so nothing hangs off-screen */
   .header-inner {
