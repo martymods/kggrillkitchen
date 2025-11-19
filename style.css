@@ -847,6 +847,23 @@ body.show-splash .app-content {
   border-color: #ffe0b2;
 }
 
+/* Stronger card color coding by fulfilment type */
+.line-order-card.type-pickup {
+  border-left: 6px solid #43a047; /* green */
+  background: #f3fbf4;
+}
+
+.line-order-card.type-delivery {
+  border-left: 6px solid #1e88e5; /* blue */
+  background: #f0f6ff;
+}
+
+.line-order-card.type-inline {
+  border-left: 6px solid #fb8c00; /* orange */
+  background: #fff8ec;
+}
+
+
 .pill-status {
   text-transform: capitalize;
 }
