@@ -966,6 +966,22 @@ body.show-splash .app-content {
   flex-wrap: wrap;
 }
 
+.line-order-history-times {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.line-order-history-times div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.line-order-history-times strong {
+  font-weight: 600;
+}
+
+
 .line-btn {
   border-radius: 999px;
   padding: 0.25rem 0.7rem;
