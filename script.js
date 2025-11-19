@@ -1417,10 +1417,9 @@ function requireInlineProximity() {
   });
 }
 
-
 /**
  * Update the delivery fields visibility based on selected order type. When
- * switching to delivery, attempt to prefill address and compute fee, but
+ * switching to delivery, attempt to prefill / geocode and compute fee, but
  * NEVER override a manually-entered or previously-saved address.
  */
 function updateOrderType() {
@@ -1431,59 +1430,67 @@ function updateOrderType() {
   const paymentFieldset = document.getElementById('paymentFieldset');
   const inlineDiscountBadge = document.getElementById('inlineDiscountBadge');
 
-
   if (orderType === 'delivery') {
+    // Show delivery details
     deliveryFields.hidden = false;
     if (addressEl) addressEl.required = true;
 
-    // Only auto-fill from geolocation if the address is empty
-    if (addressEl && !addressEl.value.trim()) {
-      getLocationAndPrefill();
+    // 👉 ALWAYS (re)compute delivery fee when switching to delivery
+    if (addressEl) {
+      const addr = addressEl.value.trim();
+
+      if (addr) {
+        // We already have an address (typed or loaded from storage) –
+        // geocode it and update distance + deliveryFee.
+        geocodeAddressAndUpdate(addr);
+      } else {
+        // No address yet – try to use geolocation which will call
+        // showMapAndDistance() and set deliveryFee.
+        getLocationAndPrefill();
+      }
     }
   } else {
+    // Leaving delivery → hide fields and clear fee
     deliveryFields.hidden = true;
     if (addressEl) {
       addressEl.required = false;
     }
     document.getElementById('mapContainer').hidden = true;
     document.getElementById('distanceSummary').textContent = '';
+
+    // ✅ IMPORTANT: zero out fee when not in delivery
     deliveryFee = 0;
     updateCartTotals();
   }
 
-// Inline / in-store UI: show notice + hide payment section
-if (inlineNoticeEl) {
-  inlineNoticeEl.hidden = orderType !== 'inline';
-}
-if (paymentFieldset) {
-  paymentFieldset.hidden = orderType === 'inline';
-}
-if (inlineDiscountBadge) {
-  inlineDiscountBadge.hidden = orderType !== 'inline';
-}
-
-
-// Update submit button label for inline orders
-const placeBtn = document.getElementById('placeOrderButton');
-if (placeBtn) {
-  if (orderType === 'inline') {
-    placeBtn.textContent = 'Place in line';
-  } else {
-    placeBtn.textContent = 'Pay & place order';
+  // ---------------- Inline / in-store UI ----------------
+  if (inlineNoticeEl) {
+    inlineNoticeEl.hidden = orderType !== 'inline';
   }
-}
+  if (paymentFieldset) {
+    // Hide payment section for inline orders
+    paymentFieldset.hidden = orderType === 'inline';
+  }
+  if (inlineDiscountBadge) {
+    inlineDiscountBadge.hidden = orderType !== 'inline';
+  }
+
+  // Update submit button label for inline orders
+  const placeBtn = document.getElementById('placeOrderButton');
+  if (placeBtn) {
+    placeBtn.textContent =
+      orderType === 'inline' ? 'Place in line' : 'Pay & place order';
+  }
 
   // Persist selection
   saveField('kg_orderType', orderType);
-  // Update tip UI when order type changes
-  updateTipSection();
 
-  // Re-apply item pricing for the new order type
+  // Re-apply pricing and totals for the new fulfilment type
   applyPricingForOrderType();
   renderCart();
+  updateTipSection();
   updateCartTotals();
 }
-
 
 
 /**
