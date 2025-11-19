@@ -131,16 +131,7 @@ function unlockAudioAndSpeech() {
     }
   }
 
-  // Prime speech synthesis with a silent utterance
-  if ('speechSynthesis' in window) {
-    try {
-      const dummy = new SpeechSynthesisUtterance('');
-      dummy.volume = 0;
-      window.speechSynthesis.speak(dummy);
-    } catch (e) {
-      console.warn('speechSynthesis warm-up failed', e);
-    }
-  }
+
 }
 
 function playNewOrderSound() {
@@ -152,41 +143,24 @@ function playNewOrderSound() {
   }
 }
 
-    // Simple voice picker that prefers Microsoft voices if available
-    let cachedVoices = [];
-
-    function refreshVoices() {
-      if (!('speechSynthesis' in window)) return;
-      cachedVoices = window.speechSynthesis.getVoices() || [];
-    }
-
-    function getMicrosoftVoice() {
-      if (!('speechSynthesis' in window)) return null;
-      if (!cachedVoices.length) {
-        refreshVoices();
-      }
-
-      // Prefer a Microsoft English voice if present (Edge / Windows)
-      let voice =
-        cachedVoices.find(v => /microsoft/i.test(v.name) && /en/i.test(v.lang)) ||
-        cachedVoices.find(v => /microsoft/i.test(v.name)) ||
-        cachedVoices.find(v => /en/i.test(v.lang)) ||
-        cachedVoices[0];
-
-      return voice || null;
-    }
-
+    // ------------------------- speech (simplified for iOS) ------------------------
     function speakOrderReady(name) {
       if (!('speechSynthesis' in window)) return;
+
       const text = name
         ? `Order for ${name} is ready at K G Grill Kitchen.`
         : `An order is ready at K G Grill Kitchen.`;
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voice = getMicrosoftVoice();
-      if (voice) {
-        utterance.voice = voice;
+      try {
+        // WebKit/iOS behaves better if we cancel any pending speech first
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        // ignore
       }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      // Explicit language helps iOS pick a voice
+      utterance.lang = 'en-US';
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
@@ -196,12 +170,7 @@ function playNewOrderSound() {
         console.warn('speechSynthesis failed', e);
       }
     }
-
-    // Prime voices on load where supported
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = refreshVoices;
-      refreshVoices();
-    }
+   
 
 
     let currentFilter = 'all';
@@ -576,16 +545,6 @@ function unlockLineAudio() {
     console.warn("Audio unlock failed:", e);
   });
 
-  // Speech synthesis warm-up
-  if ("speechSynthesis" in window) {
-    try {
-      const dummy = new SpeechSynthesisUtterance("");
-      dummy.volume = 0;
-      speechSynthesis.speak(dummy);
-    } catch (err) {
-      console.warn("Speech warm-up failed:", err);
-    }
-  }
 }
 
 document.addEventListener("touchstart", unlockLineAudio, { once: true });
