@@ -610,6 +610,18 @@ const portionOptions = {
     { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
     { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
   ],
+    beef_kabobs: [
+    // Chicken, Beef & Shrimp Kabobs platter
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+  ],
+    shrimp_kabobs: [
+    // Chicken, Beef & Shrimp Kabobs platter
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+  ],
 };
 
 /** Current fulfilment type helper */
