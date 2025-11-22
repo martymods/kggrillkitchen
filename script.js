@@ -78,21 +78,21 @@ const mains = [
   {
     id: 'chicken_kabobs',
     name: 'Chicken Kabobs',
-    price: 16.0,
+    price: 11.0,
     description: 'Skewered chicken with peppers and onions.',
     image: '/pictures/chickenKabobs.JPG',  // <= UPDATED,
   },
   {
     id: 'beef_kabobs',
     name: 'Beef Kabobs',
-    price: 16.0,
+    price: 11.0,
     description: 'Tender beef kabobs seasoned and grilled.',
     image: '/pictures/beefKabobs.JPG',     // <= UPDATED
   },
   {
     id: 'shrimp_kabobs',
     name: 'Shrimp Kabobs',
-    price: 16.0,
+    price: 11.0,
     description: 'Grilled shrimp skewers with garlic butter.',
     image: '/pictures/shrimpKabobs.jpeg',
   },
@@ -616,21 +616,21 @@ const portionOptions = {
   ],
   chicken_kabobs: [
     // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
   ],
     beef_kabobs: [
     // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
   ],
     shrimp_kabobs: [
     // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 16, inlinePrice: 15 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 19, inlinePrice: 18 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 22, inlinePrice: 20 },
+    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
+    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
+    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
   ],
 };
 
