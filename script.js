@@ -27,10 +27,10 @@ const mains = [
 
   {
     id: 'beef_burgers',
-    name: 'Beef Burgers',
+    name: 'Lamb Burger',
     price: 5.5,
     description: 'Juicy grilled burgers with fresh lettuce and tomato.',
-    image: '/pictures/beefBurger.jpeg',
+    image: '/pictures/lamb_burger.png',
   },
   {
     id: 'beef_patties',
