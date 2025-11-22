@@ -42,7 +42,7 @@ const mains = [
   {
     id: 'chicken_wings',
     name: 'Chicken Wings',
-    price: 16.0,
+    price: 11.0,
     description: 'Crisp fried wings tossed in your choice of sauce.',
     image: '/pictures/chickenwing.gif',     // <= UPDATED
   },
@@ -603,16 +603,16 @@ const portionOptions = {
     { key: '3_ribs', label: '3 ribs', onlinePrice: 26, inlinePrice: 25 },
   ],
   chicken_wings: [
-    { key: '2_wings', label: '2 wings', onlinePrice: 16, inlinePrice: 15 },
-    { key: '3_wings', label: '3 wings', onlinePrice: 19, inlinePrice: 18 },
-    { key: '4_wings', label: '4 wings', onlinePrice: 22, inlinePrice: 20 },
+    { key: '2_wings', label: '2 wings', onlinePrice: 11, inlinePrice: 10 },
+    { key: '3_wings', label: '3 wings', onlinePrice: 15, inlinePrice: 13 },
+    { key: '4_wings', label: '4 wings', onlinePrice: 18, inlinePrice: 15 },
   ],
   chicken_quarter: [
     // Online: 1 = 18, 2 = 26, 3 = 32
     // In-line: 1 = 12, then +7 per added leg → 12, 19, 26
-    { key: '1_leg', label: '1 leg', onlinePrice: 18, inlinePrice: 12 },
-    { key: '2_legs', label: '2 legs', onlinePrice: 26, inlinePrice: 19 },
-    { key: '3_legs', label: '3 legs', onlinePrice: 32, inlinePrice: 26 },
+    { key: '1_leg', label: '1 leg', onlinePrice: 15, inlinePrice: 12 },
+    { key: '2_legs', label: '2 legs', onlinePrice: 23, inlinePrice: 19 },
+    { key: '3_legs', label: '3 legs', onlinePrice: 30, inlinePrice: 26 },
   ],
   chicken_kabobs: [
     // Chicken, Beef & Shrimp Kabobs platter
