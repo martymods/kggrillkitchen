@@ -22,7 +22,7 @@ const mains = [
   name: 'Beef Ribs',
   price: 16.0, // was 20.0
   description: 'Slow-cooked ribs glazed with our signature BBQ sauce.',
-  image: '/pictures/beefRibs.jpeg',
+  image: '/pictures/DSC04857.JPG',
 },
 
   {
