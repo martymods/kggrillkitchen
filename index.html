@@ -68,14 +68,21 @@
     </header>
 
     <!-- Main content container -->
-    <div id="inlinePreviewWarning" class="inline-preview-warning" hidden>
-      <p class="inline-preview-title">You're not at the restaurant right now.</p>
-      <p class="inline-preview-body">
-        In-store orders can only be placed when you're close to KG Grill Kitchen. You can still browse the full menu and
-        build a cart to preview prices, but checkout is disabled until you arrive or switch to Pickup/Delivery.
-      </p>
-    </div>
+    <main class="main-content">
+      <div id="inlinePreviewWarning" class="inline-preview-warning" hidden>
+        <p class="inline-preview-title">You're not at the restaurant right now.</p>
+        <p class="inline-preview-body">
+          In-store orders can only be placed when you're close to KG Grill Kitchen. You can still browse the full menu and
+          build a cart to preview prices, but checkout is disabled until you arrive or switch to Pickup/Delivery.
+        </p>
+      </div>
 
+      <!-- Mains menu section -->
+      <section class="menu-section" id="main-menu">
+        <h2>Mains</h2>
+        <div class="menu-grid" id="mains-container"><!-- items injected via JS --></div>
+      </section>
+      
       <!-- Sides menu section -->
       <section class="menu-section" id="side-menu">
         <h2>Sides</h2>
