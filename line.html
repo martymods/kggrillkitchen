@@ -60,6 +60,17 @@
       </p>
     </section>
 
+    <section class="line-pricing" aria-label="In-line pricing controls">
+      <div class="line-pricing-header">
+        <div>
+          <h2>In-line / In-store pricing</h2>
+          <p>Adjust only the in-line prices. Pickup and delivery automatically keep their existing markup.</p>
+        </div>
+        <div class="line-pricing-hint">Pickup/Delivery prices update instantly and cannot be edited here.</div>
+      </div>
+      <div id="pricingEditor" class="line-pricing-grid"></div>
+    </section>
+
     <!-- Tabs like DoorDash tablet -->
     <div class="line-tabs" role="tablist" aria-label="Order filters">
       <button class="line-tab active" data-filter="all" type="button">
@@ -92,6 +103,7 @@
   </main>
 
  <script src="analytics-client.js" defer></script>
+ <script src="pricing-data.js"></script>
   <script>
     // ------------------------- config helpers -------------------------
     function getApiBase() {
@@ -131,6 +143,193 @@
       } catch (err) {
         console.warn('Could not persist ordering status', err);
       }
+    }
+
+    // ------------------------- pricing overrides -------------------------
+    const {
+      mains: pricingMains = [],
+      sides: pricingSides = [],
+      portionOptions: pricingPortions = {},
+      getEffectivePrices,
+      loadPriceOverrides,
+      savePriceOverrides,
+      computeInlineBasePrice,
+      PRICE_OVERRIDE_STORAGE_KEY,
+    } = window.KG_MENU_DATA || {};
+
+    let pricingOverrides = loadPriceOverrides ? loadPriceOverrides() : { items: {}, portions: {} };
+
+    function formatCurrency(amount) {
+      const num = Number(amount) || 0;
+      return `$${num.toFixed(2)}`;
+    }
+
+    function refreshPricingOverrides() {
+      pricingOverrides = loadPriceOverrides ? loadPriceOverrides() : pricingOverrides;
+    }
+
+    function pricingFor(itemId, portionKey = null) {
+      if (getEffectivePrices) {
+        const pricing = getEffectivePrices(itemId, portionKey, pricingOverrides);
+        if (pricing) return pricing;
+      }
+
+      if (portionKey) {
+        const opts = pricingPortions[itemId] || [];
+        const match = opts.find(o => o.key === portionKey) || opts[0];
+        if (match) {
+          return {
+            inline: match.inlinePrice,
+            online: match.onlinePrice,
+          };
+        }
+      }
+
+      const item = pricingMains.concat(pricingSides).find(i => i.id === itemId);
+      if (!item) return { inline: 0, online: 0 };
+      const inline = computeInlineBasePrice ? computeInlineBasePrice(item.price, item.id) : item.price;
+      return { inline, online: item.price };
+    }
+
+    function commitPricingOverrides(next) {
+      pricingOverrides = next;
+      if (savePriceOverrides) {
+        savePriceOverrides(next);
+      }
+    }
+
+    function updateInlinePrice(itemId, portionKey, inlineValue) {
+      if (!Number.isFinite(inlineValue) || inlineValue <= 0) return;
+
+      const next = {
+        items: { ...(pricingOverrides.items || {}) },
+        portions: { ...(pricingOverrides.portions || {}) },
+      };
+
+      if (portionKey) {
+        next.portions[itemId] = { ...(next.portions[itemId] || {}) };
+        next.portions[itemId][portionKey] = inlineValue;
+      } else {
+        next.items[itemId] = inlineValue;
+      }
+
+      commitPricingOverrides(next);
+      renderPricingEditor();
+    }
+
+    function resetInlinePrice(itemId, portionKey) {
+      const next = {
+        items: { ...(pricingOverrides.items || {}) },
+        portions: { ...(pricingOverrides.portions || {}) },
+      };
+
+      if (portionKey) {
+        if (next.portions[itemId]) {
+          delete next.portions[itemId][portionKey];
+          if (Object.keys(next.portions[itemId]).length === 0) {
+            delete next.portions[itemId];
+          }
+        }
+      } else {
+        delete next.items[itemId];
+      }
+
+      commitPricingOverrides(next);
+      renderPricingEditor();
+    }
+
+    function createPriceRow(itemId, label, inlinePrice, pickupPrice, portionKey) {
+      const row = document.createElement('div');
+      row.className = 'line-price-row';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'line-price-label';
+      labelEl.textContent = label;
+
+      const controls = document.createElement('div');
+      controls.className = 'line-price-controls';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = '0.01';
+      input.min = '0';
+      input.value = inlinePrice.toFixed(2);
+      input.className = 'line-price-input';
+      input.addEventListener('change', (e) => {
+        const val = parseFloat(e.target.value);
+        updateInlinePrice(itemId, portionKey, val);
+      });
+
+      const preview = document.createElement('div');
+      preview.className = 'line-price-preview';
+      preview.textContent = `Pickup/Delivery: ${formatCurrency(pickupPrice)}`;
+
+      const resetBtn = document.createElement('button');
+      resetBtn.type = 'button';
+      resetBtn.className = 'btn-outline tiny';
+      resetBtn.textContent = 'Reset';
+      resetBtn.addEventListener('click', () => resetInlinePrice(itemId, portionKey));
+
+      controls.appendChild(input);
+      controls.appendChild(preview);
+      controls.appendChild(resetBtn);
+
+      row.appendChild(labelEl);
+      row.appendChild(controls);
+      return row;
+    }
+
+    function renderPricingEditor() {
+      const container = document.getElementById('pricingEditor');
+      if (!container) return;
+
+      refreshPricingOverrides();
+      container.innerHTML = '';
+
+      const allItems = pricingMains.concat(pricingSides);
+
+      allItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'line-price-card';
+
+        const header = document.createElement('header');
+        header.className = 'line-price-card-header';
+        header.innerHTML = `<div class="line-price-title">${item.name}</div><div class="line-price-desc">${item.description || ''}</div>`;
+        card.appendChild(header);
+
+        const rows = document.createElement('div');
+        rows.className = 'line-price-rows';
+
+        const portions = pricingPortions[item.id];
+        if (portions && portions.length) {
+          portions.forEach(opt => {
+            const pricing = pricingFor(item.id, opt.key);
+            rows.appendChild(
+              createPriceRow(
+                item.id,
+                opt.label,
+                pricing.inline,
+                pricing.online,
+                opt.key,
+              ),
+            );
+          });
+        } else {
+          const pricing = pricingFor(item.id, null);
+          rows.appendChild(
+            createPriceRow(
+              item.id,
+              'In-line price',
+              pricing.inline,
+              pricing.online,
+              null,
+            ),
+          );
+        }
+
+        card.appendChild(rows);
+        container.appendChild(card);
+      });
     }
 
     function updateAvailabilityUI(status) {
@@ -573,21 +772,24 @@ async function fetchOrders() {
     }
 
     // ------------------------- events --------------------------------
-document.addEventListener('DOMContentLoaded', () => {
-  // Availability toggle
-  updateAvailabilityUI(loadOrderingStatus());
+  document.addEventListener('DOMContentLoaded', () => {
+    // Availability toggle
+    updateAvailabilityUI(loadOrderingStatus());
+    renderPricingEditor();
 
-  const availabilityToggle = document.getElementById('orderingClosedToggle');
-  const availabilityMessage = document.getElementById('orderingClosedMessageInput');
+    const availabilityToggle = document.getElementById('orderingClosedToggle');
+    const availabilityMessage = document.getElementById('orderingClosedMessageInput');
   availabilityToggle?.addEventListener('change', handleAvailabilityChange);
   availabilityMessage?.addEventListener('blur', handleAvailabilityChange);
   availabilityMessage?.addEventListener('input', handleAvailabilityChange);
 
-  window.addEventListener('storage', (event) => {
-    if (event.key === ORDERING_STATUS_STORAGE_KEY) {
-      updateAvailabilityUI(loadOrderingStatus());
-    }
-  });
+    window.addEventListener('storage', (event) => {
+      if (event.key === ORDERING_STATUS_STORAGE_KEY) {
+        updateAvailabilityUI(loadOrderingStatus());
+      } else if (event.key === PRICE_OVERRIDE_STORAGE_KEY) {
+        renderPricingEditor();
+      }
+    });
 
   // On first tap/click, unlock audio and A.I. voice (needed for iOS Safari)
   ['click', 'touchstart'].forEach(evt => {
