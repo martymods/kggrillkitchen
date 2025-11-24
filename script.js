@@ -11,171 +11,17 @@
  * recalculated whenever the cart or fulfilment method changes.
  */
 
-// Menu definitions. Prices are in USD. Feel free to adjust as needed.
-// Define mains with updated pricing. Each object may include additional
-// properties for free side and sauce eligibility. Prices reflect the
-// latest menu: most mains are $16 or higher, burgers and patties are
-// lower, and fish dishes are premium priced.
-const mains = [
-{
-  id: 'beef_ribs',
-  name: 'Beef Ribs',
-  price: 16.0, // was 20.0
-  description: 'Slow-cooked ribs glazed with our signature BBQ sauce.',
-  image: '/pictures/DSC04857.JPG',
-},
-
-  {
-    id: 'beef_burgers',
-    name: 'Lamb Burger',
-    price: 5.5,
-    description: 'Juicy grilled burgers with fresh lettuce and tomato.',
-    image: '/pictures/lamb_burger.png',
-  },
-  {
-    id: 'beef_patties',
-    name: 'Beef Patties',
-    price: 3.5,
-    description: 'Crispy golden beef patties with a flaky crust.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
-  },
-  {
-    id: 'chicken_wings',
-    name: 'Chicken Wings',
-    price: 11.0,
-    description: 'Crisp fried wings tossed in your choice of sauce.',
-    image: '/pictures/chickenwing.gif',     // <= UPDATED
-  },
-{
-  id: 'chicken_quarter',
-  name: 'Chicken Quarter Legs',
-  price: 18.0, // was 7.5
-  description: 'Marinated and grilled chicken quarter legs.',
-  image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // holder logo
-},
-
-  {
-    id: 'snapper',
-    name: 'Snapper Fish',
-    price: 26.0,
-    description: 'Whole snapper lightly seasoned and fried to perfection.',
-    image: '/pictures/snapper.gif',
-  },
-  {
-    id: 'tilapia',
-    name: 'Tilapia (w/ Head)',
-    price: 21.0,
-    description: 'Whole tilapia served with head, seasoned and roasted.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
-  },
-  {
-    id: 'salmon',
-    name: 'Salmon',
-    price: 21.0,
-    description: 'Pan‑seared salmon fillet with lemon herb butter.',
-    image: '/pictures/salmon.jpeg',
-  },
-  {
-    id: 'chicken_kabobs',
-    name: 'Chicken Kabobs',
-    price: 11.0,
-    description: 'Skewered chicken with peppers and onions.',
-    image: '/pictures/chickenKabobs.JPG',  // <= UPDATED,
-  },
-  {
-    id: 'beef_kabobs',
-    name: 'Beef Kabobs',
-    price: 11.0,
-    description: 'Tender beef kabobs seasoned and grilled.',
-    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
-  },
-  {
-    id: 'shrimp_kabobs',
-    name: 'Shrimp Kabobs',
-    price: 11.0,
-    description: 'Grilled shrimp skewers with garlic butter.',
-    image: '/pictures/shrimpKabobs.jpeg',
-  },
-
-  {
-    id: 'kg_mystery',
-    name: 'KG Surprise Item',
-    price: 4.0,
-    description: 'A random treat from KG’s grill – could be a wing, kabob, extra scoop or something special.',
-    image: '/pictures/kg_mystery-item.png',
-  },
-];
+const {
+  mains = [],
+  sides = [],
+  portionOptions = {},
+  getEffectivePrices,
+  loadPriceOverrides,
+  PRICE_OVERRIDE_STORAGE_KEY,
+} = window.KG_MENU_DATA || {};
 
 
-// Define side dishes. Most sides are priced at $6.50, except Cassava Leaf
-// which is a premium dish. Additional small side portions (one wing or
-// single kabob) are available at $3.50 each.
-const sides = [
-  {
-    id: 'jollof_rice',
-    name: 'Jollof Rice',
-    price: 6.0,
-    description: 'West African seasoned rice cooked in a rich tomato sauce.',
-    image: '/pictures/jollofRice.gif',
-  },
-  {
-    id: 'mac_cheese',
-    name: 'Mac & Cheese',
-    price: 6.0,
-    description: 'Creamy macaroni baked with cheddar cheese.',
-    image: '/pictures/macandcheese.png',
-  },
-  {
-    id: 'potato_wedges',
-    name: 'Potato Wedges',
-    price: 6.0,
-    description: 'Seasoned potato wedges fried until crispy.',
-    image: '/pictures/potatoWedges.jpeg',
-  },
-  {
-    id: 'cassava_leaf',
-    name: 'Cassava Leaf',
-    price: 21.50,
-    description: 'Traditional Liberian stew made with cassava leaves.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
-  },
-  {
-    id: 'potato_greens',
-    name: 'Potato Greens & White Rice',
-    price: 21.50,
-    description: 'Savory potato greens served with fluffy white rice.',
-    image: '/pictures/kg_Grill_Kitchen_LogoDesign.png', // <= holder logo
-  },
-  // Additional sides consisting of single pieces priced at $3.50 each
-  {
-    id: 'side_chicken_wing',
-    name: 'Chicken Wing (1 piece)',
-    price: 3.5,
-    description: 'A single chicken wing as a tasty side.',
-    image: '/pictures/chickenwing.gif',     // <= UPDATED
-  },
-  {
-    id: 'side_chicken_kabob',
-    name: 'Chicken Kabob (1 piece)',
-    price: 3.5,
-    description: 'One skewer of chicken kabob as a side.',
-    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
-  },
-  {
-    id: 'side_beef_kabob',
-    name: 'Beef Kabob (1 piece)',
-    price: 3.5,
-    description: 'One skewer of beef kabob as a side.',
-    image: '/pictures/beefKabobs.JPG',     // <= UPDATED
-  },
-  {
-    id: 'side_shrimp_kabob',
-    name: 'Shrimp Kabob (1 piece)',
-    price: 3.5,
-    description: 'One skewer of shrimp kabob as a side.',
-    image: '/pictures/shrimpKabobs.jpeg',
-  },
-];
+let priceOverrides = loadPriceOverrides ? loadPriceOverrides() : { items: {}, portions: {} };
 
 /* --------------------------------------------------------------------------
  * Eligibility helpers
@@ -652,47 +498,19 @@ function computeDeliveryFee(distanceMiles) {
   return baseFee + (distanceMiles * perMile);
 }
 
-/**
- * Portion options for mains that have selectable plate sizes.
- * We keep separate pricing for online vs in-line / in-store.
- */
-const portionOptions = {
-  beef_ribs: [
-    { key: '1_rib', label: '1 rib', onlinePrice: 16, inlinePrice: 15 },
-    { key: '2_ribs', label: '2 ribs', onlinePrice: 21, inlinePrice: 20 },
-    { key: '3_ribs', label: '3 ribs', onlinePrice: 26, inlinePrice: 25 },
-  ],
-  chicken_wings: [
-    { key: '2_wings', label: '2 wings', onlinePrice: 11, inlinePrice: 10 },
-    { key: '3_wings', label: '3 wings', onlinePrice: 15, inlinePrice: 13 },
-    { key: '4_wings', label: '4 wings', onlinePrice: 18, inlinePrice: 15 },
-  ],
-  chicken_quarter: [
-    // Online: 1 = 18, 2 = 26, 3 = 32
-    // In-line: 1 = 12, then +7 per added leg → 12, 19, 26
-    { key: '1_leg', label: '1 leg', onlinePrice: 15, inlinePrice: 12 },
-    { key: '2_legs', label: '2 legs', onlinePrice: 23, inlinePrice: 19 },
-    { key: '3_legs', label: '3 legs', onlinePrice: 30, inlinePrice: 26 },
-  ],
-  chicken_kabobs: [
-    // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
-  ],
-    beef_kabobs: [
-    // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
-  ],
-    shrimp_kabobs: [
-    // Chicken, Beef & Shrimp Kabobs platter
-    { key: '2_kabobs', label: '2 kabobs', onlinePrice: 12, inlinePrice: 10 },
-    { key: '3_kabobs', label: '3 kabobs', onlinePrice: 15, inlinePrice: 13 },
-    { key: '4_kabobs', label: '4 kabobs', onlinePrice: 18, inlinePrice: 15 },
-  ],
-};
+const {
+  mains: sharedMains,
+  sides: sharedSides,
+  portionOptions,
+  getEffectivePrices,
+  loadPriceOverrides,
+  PRICE_OVERRIDE_STORAGE_KEY,
+} = window.KG_MENU_DATA || {};
+
+// Fall back to local definitions if the shared module isn't present (defensive)
+const mains = sharedMains || [];
+const sides = sharedSides || [];
+let priceOverrides = loadPriceOverrides ? loadPriceOverrides() : { items: {}, portions: {} };
 
 /** Current fulfilment type helper */
 function getCurrentOrderType() {
@@ -716,12 +534,21 @@ function getPortionPriceForOrderType(itemId, portionKeyOrIndex, orderType) {
     opt = options[0];
   }
 
-  const price =
-    orderType === 'inline' && typeof opt.inlinePrice === 'number'
+  const pricing = getEffectivePricingForItem({ id: itemId }, opt.key);
+  const price = pricing
+    ? (orderType === 'inline' ? pricing.inline : pricing.online)
+    : orderType === 'inline' && typeof opt.inlinePrice === 'number'
       ? opt.inlinePrice
       : opt.onlinePrice;
 
-  return { opt, price };
+  return {
+    opt: {
+      ...opt,
+      onlinePrice: pricing?.online ?? opt.onlinePrice,
+      inlinePrice: pricing?.inline ?? opt.inlinePrice,
+    },
+    price,
+  };
 }
 
 /**
@@ -751,6 +578,34 @@ function computeInlineBasePrice(basePrice, itemId) {
   return price;
 }
 
+function getEffectivePricingForItem(item, portionKey = null) {
+  if (getEffectivePrices) {
+    const pricing = getEffectivePrices(item.id, portionKey, priceOverrides);
+    if (pricing) return pricing;
+  }
+
+  if (portionKey) {
+    const opts = portionOptions[item.id] || [];
+    const fallback = opts.find(o => o.key === portionKey) || opts[0] || null;
+    if (fallback) {
+      return {
+        inline: fallback.inlinePrice,
+        online: fallback.onlinePrice,
+        markup: fallback.onlinePrice - fallback.inlinePrice,
+      };
+    }
+    return null;
+  }
+
+  const inline = computeInlineBasePrice(item.price, item.id);
+  return {
+    inline,
+    online: item.price,
+    markup: item.price - inline,
+  };
+}
+
+
 /**
  * Re-apply pricing whenever orderType changes:
  * - Update menu labels
@@ -778,10 +633,10 @@ function applyPricingForOrderType() {
       const result = getPortionPriceForOrderType(id, index, orderType);
       displayPrice = result ? result.price : item.price;
     } else {
-      const base = item.price;
-      displayPrice = orderType === 'inline'
-        ? computeInlineBasePrice(base, id)
-        : base;
+      const pricing = getEffectivePricingForItem(item);
+      displayPrice = pricing
+        ? (orderType === 'inline' ? pricing.inline : pricing.online)
+        : item.price;
     }
 
     priceEl.textContent = formatCurrency(displayPrice);
@@ -789,11 +644,13 @@ function applyPricingForOrderType() {
 
   // Update cart item prices
   cart.forEach(ci => {
-    const baseOnline = typeof ci.baseOnlinePrice === 'number' ? ci.baseOnlinePrice : ci.price;
+    const pricing = getEffectivePricingForItem(ci, ci.plateOptionKey || null);
+    const baseOnline = pricing?.online ?? (typeof ci.baseOnlinePrice === 'number' ? ci.baseOnlinePrice : ci.price);
     const baseInline =
-      typeof ci.baseInlinePrice === 'number'
+       pricing?.inline ??
+      (typeof ci.baseInlinePrice === 'number'
         ? ci.baseInlinePrice
-        : computeInlineBasePrice(baseOnline, ci.id);
+         : computeInlineBasePrice(baseOnline, ci.id));
 
     ci.baseOnlinePrice = baseOnline;
     ci.baseInlinePrice = baseInline;
@@ -839,8 +696,10 @@ function renderMenu() {
           <select class="portion-select" data-id="${item.id}">
             ${options
               .map((opt, idx) => {
-                const p =
-                  orderType === 'inline'
+                const pricing = getEffectivePricingForItem(item, opt.key);
+                const p = pricing
+                  ? (orderType === 'inline' ? pricing.inline : pricing.online)
+                  : orderType === 'inline'
                     ? opt.inlinePrice
                     : opt.onlinePrice;
                 return `<option value="${idx}">${opt.label} – ${formatCurrency(p)}</option>`;
@@ -851,10 +710,10 @@ function renderMenu() {
       `;
     } else {
       const base = item.price;
-      displayPrice =
-        orderType === 'inline'
-          ? computeInlineBasePrice(base, item.id)
-          : base;
+      const pricing = getEffectivePricingForItem(item);
+      displayPrice = pricing
+        ? (orderType === 'inline' ? pricing.inline : pricing.online)
+        : item.price;
     }
 
     card.innerHTML = `
@@ -916,20 +775,19 @@ function addToCart(item, portionOption = null) {
 
   const orderType = getCurrentOrderType();
 
-  let baseOnlinePrice = item.price;
-  let baseInlinePrice = null;
+  const pricing = getEffectivePricingForItem(item, portionOption?.key || null);
+  let baseOnlinePrice = pricing?.online ?? item.price;
+  let baseInlinePrice = pricing?.inline ?? null;
   let plateOptionKey = null;
   let plateOptionLabel = null;
   let displayName = item.name;
 
   if (portionOption) {
-    baseOnlinePrice = portionOption.onlinePrice;
-    baseInlinePrice = portionOption.inlinePrice;
     plateOptionKey = portionOption.key;
     plateOptionLabel = portionOption.label;
     displayName = `${item.name} – ${portionOption.label}`;
   } else {
-    baseInlinePrice = computeInlineBasePrice(baseOnlinePrice, item.id);
+    baseInlinePrice = baseInlinePrice ?? computeInlineBasePrice(baseOnlinePrice, item.id);
   }
 
   const effectivePrice =
@@ -2654,6 +2512,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('storage', (event) => {
     if (event.key === ORDERING_STATUS_STORAGE_KEY) {
       syncOrderingStatusFromStorage();
+          } else if (event.key === PRICE_OVERRIDE_STORAGE_KEY) {
+      priceOverrides = loadPriceOverrides ? loadPriceOverrides() : priceOverrides;
+      applyPricingForOrderType();
+      renderMenu();
+      updateCartTotals();
+      updateCartButton();
     }
   });
 
