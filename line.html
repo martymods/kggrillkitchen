@@ -66,7 +66,7 @@
     </section>
   </main>
 
-  <script src="analytics-client.js" defer></script>
+ <script src="analytics-client.js" defer></script>
   <script>
     // ------------------------- config helpers -------------------------
     function getApiBase() {
@@ -74,6 +74,68 @@
       return (meta && meta.content) || '';
     }
     const KG_API_BASE = getApiBase();
+
+    // Shared localStorage key for availability
+    const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
+    const DEFAULT_CLOSED_MESSAGE = 'Sorry, we are currently closed. Please check back when we are open.';
+
+    function loadOrderingStatus() {
+      try {
+        const raw = localStorage.getItem(ORDERING_STATUS_STORAGE_KEY);
+        if (!raw) return { closed: false, message: DEFAULT_CLOSED_MESSAGE };
+        const parsed = JSON.parse(raw);
+        return {
+          closed: Boolean(parsed?.closed),
+          message: parsed?.message || DEFAULT_CLOSED_MESSAGE,
+        };
+      } catch (err) {
+        console.warn('Could not read ordering status', err);
+        return { closed: false, message: DEFAULT_CLOSED_MESSAGE };
+      }
+    }
+
+    function saveOrderingStatus(next) {
+      try {
+        localStorage.setItem(
+          ORDERING_STATUS_STORAGE_KEY,
+          JSON.stringify({
+            closed: Boolean(next.closed),
+            message: next.message || DEFAULT_CLOSED_MESSAGE,
+          })
+        );
+      } catch (err) {
+        console.warn('Could not persist ordering status', err);
+      }
+    }
+
+    function updateAvailabilityUI(status) {
+      const toggle = document.getElementById('orderingClosedToggle');
+      const messageInput = document.getElementById('orderingClosedMessageInput');
+      const statusLabel = document.getElementById('orderingClosedStatus');
+
+      if (toggle) toggle.checked = !!status.closed;
+      if (messageInput && !messageInput.value) {
+        messageInput.value = status.message || DEFAULT_CLOSED_MESSAGE;
+      }
+
+      if (statusLabel) {
+        statusLabel.textContent = status.closed
+          ? 'Customers see: "' + (status.message || DEFAULT_CLOSED_MESSAGE) + '"'
+          : 'Ordering is live';
+        statusLabel.classList.toggle('is-closed', !!status.closed);
+      }
+    }
+
+    function handleAvailabilityChange() {
+      const toggle = document.getElementById('orderingClosedToggle');
+      const messageInput = document.getElementById('orderingClosedMessageInput');
+      const nextStatus = {
+        closed: !!toggle?.checked,
+        message: (messageInput?.value || DEFAULT_CLOSED_MESSAGE).trim() || DEFAULT_CLOSED_MESSAGE,
+      };
+      saveOrderingStatus(nextStatus);
+      updateAvailabilityUI(nextStatus);
+    }
 
 // ------------------------- audio + speech ------------------------
 // New order sound (plays when a new active order appears)
@@ -487,6 +549,21 @@ async function fetchOrders() {
 
     // ------------------------- events --------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+  // Availability toggle
+  updateAvailabilityUI(loadOrderingStatus());
+
+  const availabilityToggle = document.getElementById('orderingClosedToggle');
+  const availabilityMessage = document.getElementById('orderingClosedMessageInput');
+  availabilityToggle?.addEventListener('change', handleAvailabilityChange);
+  availabilityMessage?.addEventListener('blur', handleAvailabilityChange);
+  availabilityMessage?.addEventListener('input', handleAvailabilityChange);
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === ORDERING_STATUS_STORAGE_KEY) {
+      updateAvailabilityUI(loadOrderingStatus());
+    }
+  });
+
   // On first tap/click, unlock audio and A.I. voice (needed for iOS Safari)
   ['click', 'touchstart'].forEach(evt => {
     document.addEventListener(
