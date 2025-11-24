@@ -60,13 +60,24 @@
       </p>
     </section>
 
-    <section class="line-pricing" aria-label="In-line pricing controls">
+    <section class="line-pricing is-collapsed" aria-label="In-line pricing controls">
       <div class="line-pricing-header">
         <div>
           <h2>In-line / In-store pricing</h2>
           <p>Adjust only the in-line prices. Pickup and delivery automatically keep their existing markup.</p>
         </div>
-        <div class="line-pricing-hint">Pickup/Delivery prices update instantly and cannot be edited here.</div>
+        <div class="line-pricing-actions">
+          <div class="line-pricing-hint">Pickup/Delivery prices update instantly and cannot be edited here.</div>
+          <button
+            id="linePricingToggle"
+            class="btn-outline small"
+            type="button"
+            aria-expanded="false"
+            aria-controls="pricingEditor"
+          >
+            Show pricing
+          </button>
+        </div>
       </div>
       <div id="pricingEditor" class="line-pricing-grid"></div>
     </section>
@@ -292,6 +303,7 @@
         const card = document.createElement('div');
         card.className = 'line-price-card';
 
+
         const header = document.createElement('header');
         header.className = 'line-price-card-header';
         header.innerHTML = `<div class="line-price-title">${item.name}</div><div class="line-price-desc">${item.description || ''}</div>`;
@@ -330,6 +342,21 @@
         card.appendChild(rows);
         container.appendChild(card);
       });
+    }
+
+    // ------------------------- pricing collapse -------------------------
+    let pricingCollapsed = true;
+
+    function setPricingCollapsed(collapsed) {
+      pricingCollapsed = collapsed;
+      const section = document.querySelector('.line-pricing');
+      const toggle = document.getElementById('linePricingToggle');
+
+      section?.classList.toggle('is-collapsed', collapsed);
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        toggle.textContent = collapsed ? 'Show pricing' : 'Hide pricing';
+      }
     }
 
     function updateAvailabilityUI(status) {
@@ -776,6 +803,12 @@ async function fetchOrders() {
     // Availability toggle
     updateAvailabilityUI(loadOrderingStatus());
     renderPricingEditor();
+
+    // Pricing visibility toggle (default collapsed)
+    setPricingCollapsed(true);
+    document.getElementById('linePricingToggle')?.addEventListener('click', () => {
+      setPricingCollapsed(!pricingCollapsed);
+    });
 
     const availabilityToggle = document.getElementById('orderingClosedToggle');
     const availabilityMessage = document.getElementById('orderingClosedMessageInput');
