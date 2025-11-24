@@ -1179,3 +1179,110 @@ body.ordering-closed .inline-preview-warning {
   max-width: 120px;
 }
 
+
+/* Line pricing editor */
+.line-pricing {
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 16px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.line-pricing-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.line-pricing-header h2 {
+  margin: 0 0 4px;
+}
+
+.line-pricing-header p {
+  margin: 0;
+  color: #4a4a4a;
+}
+
+.line-pricing-hint {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.line-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.line-price-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.line-price-card-header {
+  margin-bottom: 8px;
+}
+
+.line-price-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.line-price-desc {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.line-price-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.line-price-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.line-price-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.line-price-input {
+  width: 110px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.line-price-preview {
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.btn-outline.tiny {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
