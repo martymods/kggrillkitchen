@@ -755,6 +755,50 @@ body.show-splash .app-content {
   font-size: 0.9rem;
 }
 
+.inline-preview-warning {
+  border: 1px dashed #b56b07;
+  background: #fff8e1;
+  color: #4a3201;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin: 0 0 1rem;
+}
+
+.inline-preview-title {
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.inline-preview-body {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+body.inline-preview-mode .header,
+body.inline-preview-mode main,
+body.inline-preview-mode .cart-panel,
+body.inline-preview-mode .menu-section,
+body.inline-preview-mode .menu-grid,
+body.inline-preview-mode .order-type,
+body.inline-preview-mode .view-cart-btn,
+body.inline-preview-mode .cart-header,
+body.inline-preview-mode .cart-footer,
+body.inline-preview-mode .cart-items {
+  filter: grayscale(100%) saturate(25%);
+  opacity: 0.72;
+}
+
+body.inline-preview-mode .inline-preview-warning {
+  display: block;
+}
+
+.inline-preview-disabled {
+  pointer-events: none;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+
 /* ---------------------- Line board (line.html) ------------------------- */
 .line-page .line-main {
   padding: 1rem;
