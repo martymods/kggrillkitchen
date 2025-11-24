@@ -1213,6 +1213,19 @@ body.ordering-closed .inline-preview-warning {
   color: #6b7280;
 }
 
+.line-pricing-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.line-pricing.is-collapsed .line-pricing-grid {
+  display: none;
+}
+
+
 .line-pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
