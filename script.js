@@ -566,27 +566,6 @@ function getPortionPriceForOrderType(itemId, portionKeyOrIndex, orderType) {
  * - Always remove $0.50 from X.50 prices (21.50 → 21.00, 3.50 → 3.00).
  * - Special case: $16 → $15 for “$16 items should be $15 in-line”.
  */
-function computeInlineBasePrice(basePrice, itemId) {
-  let price = basePrice;
-
-  // Special case: single-piece sides currently $3.50 → $3 in-line
-  if (['side_chicken_wing', 'side_chicken_kabob', 'side_beef_kabob', 'side_shrimp_kabob'].includes(itemId)) {
-    return 3.0;
-  }
-
-  // Remove .50 where it exists
-  const cents = Math.round(price * 100);
-  if (cents % 100 === 50) {
-    price = (cents - 50) / 100;
-  }
-
-  // $16 → $15 for in-line pricing
-  if (Math.abs(price - 16) < 0.001) {
-    price = 15;
-  }
-
-  return price;
-}
 
 function getEffectivePricingForItem(item, portionKey = null) {
   if (getEffectivePrices) {
@@ -2545,4 +2524,3 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initStripe();
 
 });
-
