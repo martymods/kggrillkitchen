@@ -34,7 +34,32 @@
     </div>
   </header>
 
-  <main class="line-main">
+ <main class="line-main">
+    <!-- Ordering availability control -->
+    <section class="line-availability" aria-label="Ordering availability">
+      <div class="line-availability-row">
+        <label class="line-availability-toggle" for="orderingClosedToggle">
+          <input id="orderingClosedToggle" type="checkbox" />
+          <span>Pause ordering</span>
+        </label>
+        <span id="orderingClosedStatus" class="line-availability-status" aria-live="polite">
+          Ordering is live
+        </span>
+      </div>
+      <div class="line-availability-row">
+        <input
+          id="orderingClosedMessageInput"
+          type="text"
+          placeholder="Message customers will see when ordering is off"
+          aria-label="Closed message"
+        />
+      </div>
+      <p class="line-availability-hint">
+        Toggle ordering off to show customers a custom message on the ordering page.
+        Changes sync instantly for everyone looking at the site.
+      </p>
+    </section>
+
     <!-- Tabs like DoorDash tablet -->
     <div class="line-tabs" role="tablist" aria-label="Order filters">
       <button class="line-tab active" data-filter="all" type="button">
