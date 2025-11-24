@@ -485,6 +485,65 @@ let deliveryFee = 0;
 let inMobileCheckout = false;
 let inlinePreviewMode = false;
 
+const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
+const DEFAULT_CLOSED_MESSAGE = 'Sorry, we are currently closed. Please check back when we are open.';
+let orderingClosed = false;
+let orderingClosedMessage = DEFAULT_CLOSED_MESSAGE;
+
+function readOrderingStatus() {
+  try {
+    const raw = localStorage.getItem(ORDERING_STATUS_STORAGE_KEY);
+    if (!raw) return { closed: false, message: DEFAULT_CLOSED_MESSAGE };
+    const parsed = JSON.parse(raw);
+    return {
+      closed: Boolean(parsed?.closed),
+      message: parsed?.message || DEFAULT_CLOSED_MESSAGE,
+    };
+  } catch (err) {
+    console.warn('Could not parse ordering status', err);
+    return { closed: false, message: DEFAULT_CLOSED_MESSAGE };
+  }
+}
+
+function applyOrderingStatus(status) {
+  orderingClosed = !!status.closed;
+  orderingClosedMessage = status.message || DEFAULT_CLOSED_MESSAGE;
+
+  const banner = document.getElementById('orderingClosedBanner');
+  const bannerMsg = document.getElementById('orderingClosedMessageText');
+  if (banner && bannerMsg) {
+    bannerMsg.textContent = orderingClosedMessage;
+    banner.hidden = !orderingClosed;
+  }
+
+  const checkoutNote = document.getElementById('orderingClosedCheckoutNote');
+  if (checkoutNote) {
+    checkoutNote.textContent = orderingClosed
+      ? `${orderingClosedMessage} Ordering is paused right now.`
+      : '';
+    checkoutNote.hidden = !orderingClosed;
+  }
+
+  document.body.classList.toggle('ordering-closed', orderingClosed);
+
+  const buttons = document.querySelectorAll('.add-to-cart-btn, .cart-upsell-btn, #checkoutButton, #placeOrderButton, #stripeCheckoutBtn');
+  buttons.forEach((btn) => {
+    if (!btn) return;
+    btn.disabled = orderingClosed || btn.classList.contains('inline-preview-disabled');
+    btn.classList.toggle('ordering-closed-disabled', orderingClosed);
+  });
+}
+
+function syncOrderingStatusFromStorage() {
+  applyOrderingStatus(readOrderingStatus());
+}
+
+function ensureOrderingOpenOrWarn() {
+  if (!orderingClosed) return true;
+  alert(orderingClosedMessage);
+  return false;
+}
+
 
 // Tip state. When delivery is selected, customers can optionally leave a tip. The
 // tip can be a percentage (e.g. 0.15 for 15%) or a custom flat amount. The
@@ -805,7 +864,7 @@ function renderMenu() {
         <p>${item.description}</p>
         <div class="price" data-price-for="${item.id}">${formatCurrency(displayPrice)}</div>
         ${portionHtml}
-        <button data-id="${item.id}">Add to Cart</button>
+         <button class="add-to-cart-btn" data-id="${item.id}">Add to Cart</button>
       </div>
     `;
 
@@ -853,6 +912,8 @@ function renderMenu() {
  * Add an item to the cart and update UI.
  */
 function addToCart(item, portionOption = null) {
+  if (!ensureOrderingOpenOrWarn()) return;
+
   const orderType = getCurrentOrderType();
 
   let baseOnlinePrice = item.price;
@@ -2182,6 +2243,8 @@ document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
   
 // Checkout open
 document.getElementById('checkoutButton').addEventListener('click', () => {
+  if (!ensureOrderingOpenOrWarn()) return;
+
   if (cart.length === 0) {
     alert('Please add items to your cart before proceeding to checkout.');
     return;
@@ -2342,6 +2405,8 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
   const stripeCheckoutBtn = document.getElementById('stripeCheckoutBtn');
   if (stripeCheckoutBtn) {
     stripeCheckoutBtn.addEventListener('click', async () => {
+       if (!ensureOrderingOpenOrWarn()) return;
+
       if (cart.length === 0) {
         alert('Please add items to your cart before proceeding to checkout.');
         return;
@@ -2355,6 +2420,8 @@ document.getElementById('checkoutButton').addEventListener('click', () => {
 document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearPaymentMessage();
+
+  if (!ensureOrderingOpenOrWarn()) return;
 
   const nameEl = document.getElementById('customerName');
   const phoneEl = document.getElementById('customerPhone');
@@ -2583,8 +2650,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }, 2000);
 
   // Normal app init
+    syncOrderingStatusFromStorage();
+  window.addEventListener('storage', (event) => {
+    if (event.key === ORDERING_STATUS_STORAGE_KEY) {
+      syncOrderingStatusFromStorage();
+    }
+  });
+
   renderMenu();
+  syncOrderingStatusFromStorage();
   ensureGamificationUI();   // 🎮 create Grill Points badge, upsell area, toast
+  syncOrderingStatusFromStorage();
   await loadGrillPoints();  // 🎮 load points from R2 (fallback to local)
   loadSavedDetails();
   updateOrderType();
