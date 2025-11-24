@@ -69,6 +69,10 @@
 
     <!-- Main content container -->
     <main class="main-content">
+            <div id="orderingClosedBanner" class="ordering-closed-banner" hidden>
+        <div class="ordering-closed-title">Ordering is paused</div>
+        <p id="orderingClosedMessageText">Sorry, we are currently closed. Please check back when we are open.</p>
+      </div>
       <div id="inlinePreviewWarning" class="inline-preview-warning" hidden>
         <p class="inline-preview-title">You're not at the restaurant right now.</p>
         <p class="inline-preview-body">
@@ -82,7 +86,7 @@
         <h2>Mains</h2>
         <div class="menu-grid" id="mains-container"><!-- items injected via JS --></div>
       </section>
-      
+
       <!-- Sides menu section -->
       <section class="menu-section" id="side-menu">
         <h2>Sides</h2>
@@ -126,6 +130,7 @@
       <form id="checkoutForm" class="checkout-form" novalidate>
         <h3>Checkout</h3>
         <p id="checkoutError" class="checkout-error" role="alert" hidden></p>
+        <p id="orderingClosedCheckoutNote" class="ordering-closed-note" hidden></p>
 
         <!-- Delivery fields (hidden until delivery selected) -->
         <div id="deliveryFields" class="delivery-fields" hidden>
