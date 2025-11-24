@@ -751,6 +751,12 @@ function applyPricingForOrderType() {
 function renderMenu() {
   const mainsContainer = document.getElementById('mains-container');
   const sidesContainer = document.getElementById('sides-container');
+
+  // If this page doesn't have the menu containers (like line.html), just skip
+  if (!mainsContainer || !sidesContainer) {
+    return;
+  }
+
   const allItems = mains.concat(sides);
   const orderType = getCurrentOrderType();
 
@@ -841,6 +847,7 @@ function renderMenu() {
   sidesContainer.innerHTML = '';
   sides.forEach(item => sidesContainer.appendChild(createCard(item)));
 }
+
 
 /**
  * Add an item to the cart and update UI.
