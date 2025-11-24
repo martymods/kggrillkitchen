@@ -17,9 +17,32 @@ const {
   portionOptions = {},
   getEffectivePrices,
   loadPriceOverrides,
+  savePriceOverrides,
   PRICE_OVERRIDE_STORAGE_KEY,
+  computeInlineBasePrice: providedComputeInlineBasePrice,
 } = window.KG_MENU_DATA || {};
 
+const computeInlineBasePrice = providedComputeInlineBasePrice || function computeInlineBasePrice(basePrice, itemId) {
+  let price = basePrice;
+
+  // Special case: single-piece sides currently $3.50 → $3 in-line
+  if (['side_chicken_wing', 'side_chicken_kabob', 'side_beef_kabob', 'side_shrimp_kabob'].includes(itemId)) {
+    return 3.0;
+  }
+
+  // Remove .50 where it exists
+  const cents = Math.round(price * 100);
+  if (cents % 100 === 50) {
+    price = (cents - 50) / 100;
+  }
+
+  // $16 → $15 for in-line pricing
+  if (Math.abs(price - 16) < 0.001) {
+    price = 15;
+  }
+
+  return price;
+};
 
 let priceOverrides = loadPriceOverrides ? loadPriceOverrides() : { items: {}, portions: {} };
 
@@ -498,19 +521,6 @@ function computeDeliveryFee(distanceMiles) {
   return baseFee + (distanceMiles * perMile);
 }
 
-const {
-  mains: sharedMains,
-  sides: sharedSides,
-  portionOptions,
-  getEffectivePrices,
-  loadPriceOverrides,
-  PRICE_OVERRIDE_STORAGE_KEY,
-} = window.KG_MENU_DATA || {};
-
-// Fall back to local definitions if the shared module isn't present (defensive)
-const mains = sharedMains || [];
-const sides = sharedSides || [];
-let priceOverrides = loadPriceOverrides ? loadPriceOverrides() : { items: {}, portions: {} };
 
 /** Current fulfilment type helper */
 function getCurrentOrderType() {
