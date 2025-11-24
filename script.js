@@ -483,6 +483,7 @@ const INLINE_RADIUS_MILES = 1.0; // ordering distance from orgin
 let userCoords = null;
 let deliveryFee = 0;
 let inMobileCheckout = false;
+let inlinePreviewMode = false;
 
 
 // Tip state. When delivery is selected, customers can optionally leave a tip. The
@@ -515,7 +516,7 @@ function computeTotals() {
   // Service & tax: 0 for in-line / in-store, 10% for pickup / delivery
   let fees = 0;
   if (orderType !== 'inline') {
-    fees = subtotal * 0.1;
+    setInlinePreviewMode(false);
   }
 
   // ✅ Delivery fee: ONLY for delivery
@@ -1373,10 +1374,38 @@ function showMapAndDistance() {
 }
 
 /**
+ * Toggle inline preview mode (user selected inline but is not nearby).
+ * Applies greyscale styling, disables checkout buttons, and shows the
+ * guidance banner about switching to pickup/delivery.
+ */
+function setInlinePreviewMode(enabled) {
+  inlinePreviewMode = enabled;
+
+  document.body.classList.toggle('inline-preview-mode', enabled);
+
+  const warning = document.getElementById('inlinePreviewWarning');
+  if (warning) {
+    warning.hidden = !enabled;
+  }
+
+  const checkoutBtn = document.getElementById('checkoutButton');
+  const placeOrderBtn = document.getElementById('placeOrderButton');
+  const stripeCheckoutBtn = document.getElementById('stripeCheckoutBtn');
+
+  [checkoutBtn, placeOrderBtn, stripeCheckoutBtn].forEach((btn) => {
+    if (!btn) return;
+    btn.disabled = enabled;
+    btn.classList.toggle('inline-preview-disabled', enabled);
+  });
+}
+
+
+/**
  * For in-line/in-store orders, require the customer to be within
  * ~0.2 miles of the restaurant. Returns a Promise<boolean>.
  */
-function requireInlineProximity() {
+function requireInlineProximity(options = {}) {
+  const { allowPreviewMode = false } = options;
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
       alert('Location is required to use in-line ordering. Please enable location access or order at the counter.');
@@ -1396,21 +1425,18 @@ function requireInlineProximity() {
         );
 
         if (dMiles <= INLINE_RADIUS_MILES) {
+          setInlinePreviewMode(false);
           resolve(true);
         } else {
-          alert('To use in-line ordering, you must be close to KG Grill Kitchen at 5750 Baltimore Ave. Please choose Pickup/Delivery or order at the counter.');
-          // Flip back to pickup if they were trying inline
-          const pickupRadio = document.querySelector('input[name="orderType"][value="pickup"]');
-          if (pickupRadio) {
-            pickupRadio.checked = true;
-          }
-          updateOrderType();
-          resolve(false);
+          alert('You appear to be outside the in-store radius. You can browse in preview mode, but you must be at the restaurant or switch to Pickup/Delivery to place an order.');
+          setInlinePreviewMode(true);
+          resolve(allowPreviewMode);
         }
       },
       (err) => {
         console.warn('Inline geolocation failed', err);
         alert('We could not read your location. Please enable GPS/location or order at the counter.');
+        setInlinePreviewMode(false);
         resolve(false);
       }
     );
@@ -1687,6 +1713,11 @@ async function submitInlineOrder() {
 
   if (!cart.length) {
     displayPaymentMessage('Your cart is empty. Please add items.');
+    return false;
+  }
+
+  if (inlinePreviewMode) {
+    displayPaymentMessage('We can only place in-store orders when you are at KG Grill Kitchen. Choose Pickup/Delivery to order remotely.');
     return false;
   }
 
@@ -2113,9 +2144,13 @@ document.querySelectorAll('input[name="orderType"]').forEach((radio) => {
     const value = e.target.value;
 
     if (value === 'inline') {
-      const ok = await requireInlineProximity();
+      const ok = await requireInlineProximity({ allowPreviewMode: true });
       if (!ok) {
-        // requireInlineProximity already reverted to pickup + updated the UI
+                const pickupRadio = document.querySelector('input[name="orderType"][value="pickup"]');
+        if (pickupRadio) {
+          pickupRadio.checked = true;
+        }
+        updateOrderType();
         return;
       }
     }
@@ -2142,6 +2177,11 @@ document.getElementById('checkoutOverlay').addEventListener('click', (e) => {
 document.getElementById('checkoutButton').addEventListener('click', () => {
   if (cart.length === 0) {
     alert('Please add items to your cart before proceeding to checkout.');
+    return;
+  }
+
+    if (inlinePreviewMode) {
+    alert('In-store checkout is disabled until you are at the restaurant. Please switch to Pickup/Delivery to place an order.');
     return;
   }
 
