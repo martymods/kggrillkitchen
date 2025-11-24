@@ -2545,3 +2545,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initStripe();
 
 });
+
