@@ -2542,7 +2542,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('storage', (event) => {
     if (event.key === ORDERING_STATUS_STORAGE_KEY) {
       syncOrderingStatusFromStorage();
-          } else if (event.key === PRICE_OVERRIDE_STORAGE_KEY) {
+    } else if (event.key === PRICE_OVERRIDE_STORAGE_KEY) {
       priceOverrides = loadPriceOverrides ? loadPriceOverrides() : priceOverrides;
       applyPricingForOrderType();
       renderMenu();
@@ -2550,6 +2550,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateCartButton();
     }
   });
+
+  // 🔁 Poll the backend so long-open sessions on phones/tablets catch changes
+  setInterval(() => {
+    fetchOrderingStatusFromBackend();
+  }, 30000); // every 30 seconds
 
   renderMenu();
   ensureGamificationUI();   // 🎮 create Grill Points badge, upsell area, toast
@@ -2561,5 +2566,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEventListeners();
   initBackgroundMusic();    // 🔊 set up music & speaker toggle
   await initStripe();
+
 
 });
