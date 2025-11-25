@@ -449,12 +449,16 @@ function unlockAudioAndSpeech() {
 
 function playNewOrderSound() {
   try {
-    const a = new Audio("audio/newOrder.mp3");
-    a.play().catch(e => console.warn("play failed:", e));
+    // Prefer the shared, preloaded audio object so the mobile "unlock" applies
+    const sound = newOrderSound || new Audio('audio/newOrder.mp3');
+    sound.currentTime = 0;
+    sound.muted = false; // ensure iOS counts this as a real playback
+    sound.play().catch(e => console.warn('play failed:', e));
   } catch (err) {
     console.error("Audio error:", err);
   }
 }
+
 
     // ------------------------- speech (simplified for iOS) ------------------------
     function speakOrderReady(name) {
@@ -865,27 +869,6 @@ async function fetchOrders() {
         if (!document.hidden) fetchOrders();
       });
     });
-
-    let lineAudioUnlocked = false;
-
-function unlockLineAudio() {
-  if (lineAudioUnlocked) return;
-  lineAudioUnlocked = true;
-
-  const test = new Audio("audio/newOrder.mp3");
-  test.volume = 0.01;          // must NOT be muted
-  test.currentTime = 0;
-  
-  test.play().then(() => {
-    test.pause();
-  }).catch((e) => {
-    console.warn("Audio unlock failed:", e);
-  });
-
-}
-
-document.addEventListener("touchstart", unlockLineAudio, { once: true });
-document.addEventListener("click", unlockLineAudio, { once: true });
 
   </script>
 </body>
