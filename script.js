@@ -434,7 +434,7 @@ function ensureOrderingOpenOrWarn() {
 
 async function fetchOrderingStatusFromBackend() {
   try {
-    const resp = await fetch(api('/ordering-status'), { cache: 'no-store' });
+    const resp = await fetch(api('/store-status'), { cache: 'no-store' });
     if (resp.ok) {
       const data = await resp.json();
       const status = {
@@ -452,6 +452,7 @@ async function fetchOrderingStatusFromBackend() {
   applyOrderingStatus(local);
   return local;
 }
+
 
 // Tip state. When delivery is selected, customers can optionally leave a tip. The
 // tip can be a percentage (e.g. 0.15 for 15%) or a custom flat amount. The
