@@ -124,8 +124,50 @@
     const KG_API_BASE = getApiBase();
 
     // Shared localStorage key for availability
-    const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
+  const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
     const DEFAULT_CLOSED_MESSAGE = 'Sorry, we are currently closed. Please check back when we are open.';
+
+    async function fetchOrderingStatusFromBackend() {
+      try {
+        const resp = await fetch(`${KG_API_BASE}/ordering-status`, { cache: 'no-store' });
+        if (resp.ok) {
+          const data = await resp.json();
+          const status = {
+            closed: Boolean(data.closed),
+            message: data.message || DEFAULT_CLOSED_MESSAGE,
+          };
+          saveOrderingStatus(status);
+          return status;
+        }
+      } catch (err) {
+        console.warn('Could not read ordering status from backend', err);
+      }
+
+      return loadOrderingStatus();
+    }
+
+    async function persistOrderingStatus(status) {
+      try {
+        const resp = await fetch(`${KG_API_BASE}/ordering-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            closed: Boolean(status.closed),
+            message: status.message || DEFAULT_CLOSED_MESSAGE,
+          }),
+        });
+
+        if (!resp.ok) {
+          throw new Error(`Backend responded with ${resp.status}`);
+        }
+
+        saveOrderingStatus(status);
+      } catch (err) {
+        console.warn('Failed to persist ordering status to backend', err);
+        // Fall back to local storage so at least this device reflects the change
+        saveOrderingStatus(status);
+      }
+    }
 
     function loadOrderingStatus() {
       try {
@@ -384,8 +426,8 @@
         closed: !!toggle?.checked,
         message: (messageInput?.value || DEFAULT_CLOSED_MESSAGE).trim() || DEFAULT_CLOSED_MESSAGE,
       };
-      saveOrderingStatus(nextStatus);
       updateAvailabilityUI(nextStatus);
+      persistOrderingStatus(nextStatus);
     }
 
 // ------------------------- audio + speech ------------------------
@@ -805,7 +847,7 @@ async function fetchOrders() {
     // ------------------------- events --------------------------------
   document.addEventListener('DOMContentLoaded', () => {
     // Availability toggle
-    updateAvailabilityUI(loadOrderingStatus());
+    fetchOrderingStatusFromBackend().then(updateAvailabilityUI);
     renderPricingEditor();
 
     // Pricing visibility toggle (default collapsed)
