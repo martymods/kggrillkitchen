@@ -348,7 +348,7 @@ function updateCartUpsell(subtotal) {
 
 // Restaurant coordinates (approximate location near 5750 Baltimore Ave)
 const restaurantCoords = { lat: 39.9448, lon: -75.2390 }; // ~58th & Baltimore
-const INLINE_RADIUS_MILES = 15.0; // ordering distance from orgin
+const INLINE_RADIUS_MILES = 1.0; // ordering distance from orgin
 let userCoords = null;
 let deliveryFee = 0;
 let inMobileCheckout = false;
@@ -358,6 +358,21 @@ const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
 const DEFAULT_CLOSED_MESSAGE = 'Sorry, we are currently closed. Please check back when we are open.';
 let orderingClosed = false;
 let orderingClosedMessage = DEFAULT_CLOSED_MESSAGE;
+
+function saveOrderingStatusToStorage(status) {
+  try {
+    localStorage.setItem(
+      ORDERING_STATUS_STORAGE_KEY,
+      JSON.stringify({
+        closed: Boolean(status?.closed),
+        message: status?.message || DEFAULT_CLOSED_MESSAGE,
+      }),
+    );
+  } catch (err) {
+    console.warn('Could not persist ordering status', err);
+  }
+}
+
 
 function readOrderingStatus() {
   try {
@@ -377,6 +392,10 @@ function readOrderingStatus() {
 function applyOrderingStatus(status) {
   orderingClosed = !!status.closed;
   orderingClosedMessage = status.message || DEFAULT_CLOSED_MESSAGE;
+
+  // Cache locally so other tabs (and offline) stay in sync even if the backend
+  // request fails later on this page load.
+  saveOrderingStatusToStorage({ closed: orderingClosed, message: orderingClosedMessage });
 
   const banner = document.getElementById('orderingClosedBanner');
   const bannerMsg = document.getElementById('orderingClosedMessageText');
@@ -413,6 +432,26 @@ function ensureOrderingOpenOrWarn() {
   return false;
 }
 
+async function fetchOrderingStatusFromBackend() {
+  try {
+    const resp = await fetch(api('/ordering-status'), { cache: 'no-store' });
+    if (resp.ok) {
+      const data = await resp.json();
+      const status = {
+        closed: Boolean(data.closed),
+        message: data.message || DEFAULT_CLOSED_MESSAGE,
+      };
+      applyOrderingStatus(status);
+      return status;
+    }
+  } catch (err) {
+    console.warn('Failed to load ordering status from backend, falling back to local copy', err);
+  }
+
+  const local = readOrderingStatus();
+  applyOrderingStatus(local);
+  return local;
+}
 
 // Tip state. When delivery is selected, customers can optionally leave a tip. The
 // tip can be a percentage (e.g. 0.15 for 15%) or a custom flat amount. The
@@ -2497,7 +2536,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }, 2000);
 
   // Normal app init
-    syncOrderingStatusFromStorage();
+  syncOrderingStatusFromStorage();
+  // Refresh from backend so the pause state applies across all devices
+  fetchOrderingStatusFromBackend();
   window.addEventListener('storage', (event) => {
     if (event.key === ORDERING_STATUS_STORAGE_KEY) {
       syncOrderingStatusFromStorage();
@@ -2511,9 +2552,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   renderMenu();
-  syncOrderingStatusFromStorage();
   ensureGamificationUI();   // 🎮 create Grill Points badge, upsell area, toast
-  syncOrderingStatusFromStorage();
   await loadGrillPoints();  // 🎮 load points from R2 (fallback to local)
   loadSavedDetails();
   updateOrderType();
