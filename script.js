@@ -348,7 +348,7 @@ function updateCartUpsell(subtotal) {
 
 // Restaurant coordinates (approximate location near 5750 Baltimore Ave)
 const restaurantCoords = { lat: 39.9448, lon: -75.2390 }; // ~58th & Baltimore
-const INLINE_RADIUS_MILES = 1.0; // ordering distance from orgin
+const INLINE_RADIUS_MILES = 15.0; // ordering distance from orgin
 let userCoords = null;
 let deliveryFee = 0;
 let inMobileCheckout = false;
