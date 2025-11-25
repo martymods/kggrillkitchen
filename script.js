@@ -434,7 +434,7 @@ function ensureOrderingOpenOrWarn() {
 
 async function fetchOrderingStatusFromBackend() {
   try {
-    const resp = await fetch(api('/store-status'), { cache: 'no-store' });
+        const resp = await fetch(api('/store-status'), { cache: 'no-store' });
     if (resp.ok) {
       const data = await resp.json();
       const status = {
@@ -2540,6 +2540,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncOrderingStatusFromStorage();
   // Refresh from backend so the pause state applies across all devices
   fetchOrderingStatusFromBackend();
+    // Poll the backend so already-open sessions learn about pauses from other devices
+  setInterval(() => {
+    fetchOrderingStatusFromBackend();
+  }, 30000); // every 30s
+
   window.addEventListener('storage', (event) => {
     if (event.key === ORDERING_STATUS_STORAGE_KEY) {
       syncOrderingStatusFromStorage();
