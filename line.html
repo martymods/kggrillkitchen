@@ -129,7 +129,7 @@
 
     async function fetchOrderingStatusFromBackend() {
       try {
-        const resp = await fetch(`${KG_API_BASE}/ordering-status`, { cache: 'no-store' });
+        const resp = await fetch(`${KG_API_BASE}/store-status`, { cache: 'no-store' });
         if (resp.ok) {
           const data = await resp.json();
           const status = {
@@ -143,12 +143,14 @@
         console.warn('Could not read ordering status from backend', err);
       }
 
+      // Fallback: last known local value
       return loadOrderingStatus();
     }
-    
+
+
     async function persistOrderingStatus(status) {
       try {
-        const resp = await fetch(`${KG_API_BASE}/ordering-status`, {
+        const resp = await fetch(`${KG_API_BASE}/store-status`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -161,7 +163,7 @@
           throw new Error(`Backend responded with ${resp.status}`);
         }
 
-        // If backend returns JSON, prefer that as the source of truth
+        // Prefer what the backend returns as the source of truth
         let confirmed = status;
         try {
           const data = await resp.json();
@@ -172,27 +174,27 @@
             };
           }
         } catch (e) {
-          // If there's no JSON body, just use the status we sent
+          // no JSON body, keep status as-is
         }
 
-        // ✅ Only save to localStorage when the backend call succeeded
         saveOrderingStatus(confirmed);
-        // And make sure the toggle + text match the confirmed state
         updateAvailabilityUI(confirmed);
       } catch (err) {
         console.warn('Failed to persist ordering status to backend', err);
         alert('Could not update ordering status. No changes were saved.');
 
-        // Revert UI and localStorage back to the real backend value
+        // Revert to real value from backend or last good local copy
         try {
           const current = await fetchOrderingStatusFromBackend();
+          saveOrderingStatus(current);
           updateAvailabilityUI(current);
         } catch (e) {
-          // If even that fails, leave the last known good local value
-          updateAvailabilityUI(loadOrderingStatus());
+          const local = loadOrderingStatus();
+          updateAvailabilityUI(local);
         }
       }
     }
+
 
     function loadOrderingStatus() {
       try {
