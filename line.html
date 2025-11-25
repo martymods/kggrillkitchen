@@ -145,7 +145,7 @@
 
       return loadOrderingStatus();
     }
-
+    
     async function persistOrderingStatus(status) {
       try {
         const resp = await fetch(`${KG_API_BASE}/ordering-status`, {
@@ -161,11 +161,36 @@
           throw new Error(`Backend responded with ${resp.status}`);
         }
 
-        saveOrderingStatus(status);
+        // If backend returns JSON, prefer that as the source of truth
+        let confirmed = status;
+        try {
+          const data = await resp.json();
+          if (data && typeof data === 'object') {
+            confirmed = {
+              closed: Boolean(data.closed),
+              message: data.message || DEFAULT_CLOSED_MESSAGE,
+            };
+          }
+        } catch (e) {
+          // If there's no JSON body, just use the status we sent
+        }
+
+        // ✅ Only save to localStorage when the backend call succeeded
+        saveOrderingStatus(confirmed);
+        // And make sure the toggle + text match the confirmed state
+        updateAvailabilityUI(confirmed);
       } catch (err) {
         console.warn('Failed to persist ordering status to backend', err);
-        // Fall back to local storage so at least this device reflects the change
-        saveOrderingStatus(status);
+        alert('Could not update ordering status. No changes were saved.');
+
+        // Revert UI and localStorage back to the real backend value
+        try {
+          const current = await fetchOrderingStatusFromBackend();
+          updateAvailabilityUI(current);
+        } catch (e) {
+          // If even that fails, leave the last known good local value
+          updateAvailabilityUI(loadOrderingStatus());
+        }
       }
     }
 
