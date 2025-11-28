@@ -3,131 +3,714 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="kg-api-base" content="https://www.delcotechdivision.com/kg" />
   <title>Thank You – KG Grill Kitchen</title>
   <style>
     :root {
       --kg-green: #09a450;
-      --kg-dark: #065c2c;
+      --kg-dark: #0a2918;
       --kg-light: #f7fff8;
       --kg-accent: #1f8a44;
+      --kg-amber: #f7b733;
+      --kg-muted: #5d6c62;
+      --kg-surface: #ffffff;
+      --kg-border: #d7e3d8;
     }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--kg-light);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(9,164,80,0.08), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(31,138,68,0.08), transparent 30%),
+                  var(--kg-light);
       color: var(--kg-dark);
-      padding: 24px;
+      padding: 28px 18px 48px;
     }
-    h1 {
-      margin-top: 0;
-      color: var(--kg-dark);
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-      padding: 24px;
-      max-width: 480px;
+
+    .page {
+      max-width: 1100px;
       margin: 0 auto;
     }
-    .summary { margin-top: 16px; }
-    .item {
+
+    .thankyou-header {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #e1e7e1;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
-    .totals {
-      margin-top: 16px;
-      padding-top: 8px;
-      border-top: 1px solid #cce5d1;
-    }
-    .totals div {
+
+    .brand {
       display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
+      align-items: center;
+      gap: 14px;
     }
-    .total {
-      font-weight: bold;
+
+    .logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
+      border: 3px solid rgba(9,164,80,0.1);
+      box-shadow: 0 12px 30px rgba(9,164,80,0.18);
+      object-fit: cover;
+      background: #fff;
+      padding: 6px;
     }
-    a.home {
-      display: block;
-      margin-top: 20px;
-      text-align: center;
+
+    .eyebrow {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 11px;
+      color: var(--kg-muted);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 2px 0 8px;
+      font-size: 28px;
+    }
+
+    .subhead {
+      margin: 0;
+      color: var(--kg-muted);
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    .pill-button {
+      background: linear-gradient(120deg, var(--kg-green), var(--kg-accent));
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 14px;
       text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 12px 22px rgba(9,164,80,0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pill-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(9,164,80,0.3);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--kg-surface);
+      border-radius: 18px;
+      box-shadow: 0 12px 34px rgba(0,0,0,0.05);
+      padding: 18px 20px;
+      border: 1px solid var(--kg-border);
+    }
+
+    .progress-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-card:before {
+      content: "";
+      position: absolute;
+      inset: -20% auto auto -30%;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(9,164,80,0.12), transparent 70%);
+      filter: blur(12px);
+      z-index: 0;
+    }
+
+    .progress-card > * { position: relative; z-index: 1; }
+
+    .progress-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(9,164,80,0.1);
+      color: var(--kg-dark);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .pill.soft {
+      background: #eef6f0;
+      color: var(--kg-muted);
+      font-weight: 600;
+    }
+
+    .badge-live {
+      background: #fff7ec;
+      color: #d97706;
+      border: 1px solid rgba(247,183,51,0.4);
+      box-shadow: 0 0 0 6px rgba(247,183,51,0.08);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 6px rgba(247,183,51,0.12); }
+      50% { box-shadow: 0 0 0 10px rgba(247,183,51,0.28); }
+      100% { box-shadow: 0 0 0 6px rgba(247,183,51,0.12); }
+    }
+
+    .order-hero {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(110deg, rgba(9,164,80,0.12), rgba(31,138,68,0.08));
+      margin-bottom: 12px;
+    }
+
+    .order-hero img {
+      width: 66px;
+      height: 66px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 2px solid rgba(9,164,80,0.2);
+    }
+
+    .order-hero strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .order-hero span {
+      color: var(--kg-muted);
+      font-weight: 600;
+    }
+
+    .progress-steps {
+      list-style: none;
+      margin: 0;
+      padding: 6px 4px 0;
+      position: relative;
+    }
+
+    .progress-step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+      padding: 12px 0 12px;
+      position: relative;
+    }
+
+    .progress-step:before {
+      content: "";
+      position: absolute;
+      left: 23px;
+      top: 58px;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(9,164,80,0.32), rgba(9,164,80,0.08));
+    }
+
+    .progress-step:last-child:before { display: none; }
+
+    .step-marker {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid rgba(9,164,80,0.24);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 16px rgba(9,164,80,0.08);
+      overflow: hidden;
+    }
+
+    .step-number {
+      font-weight: 800;
+      color: var(--kg-dark);
+    }
+
+    .step-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.18;
+    }
+
+    .step-copy {
+      padding-right: 8px;
+    }
+
+    .step-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .step-text {
+      margin: 6px 0 0;
+      color: var(--kg-muted);
+      line-height: 1.45;
+    }
+
+    .step-time {
+      margin-top: 4px;
+      font-weight: 700;
+      color: var(--kg-accent);
+      font-size: 13px;
+    }
+
+    .progress-step.completed .step-marker {
+      border-color: var(--kg-green);
+      background: linear-gradient(140deg, rgba(9,164,80,0.16), rgba(31,138,68,0.06));
+    }
+
+    .progress-step.completed .step-number {
       color: var(--kg-green);
-      font-weight: bold;
+    }
+
+    .progress-step.current .step-marker {
+      border-color: var(--kg-amber);
+      box-shadow: 0 10px 18px rgba(247,183,51,0.2);
+    }
+
+    .progress-step.current .step-number {
+      color: #d97706;
+    }
+
+    .progress-step.canceled .step-marker {
+      border-color: #c02626;
+      background: #fff0f0;
+      box-shadow: none;
+    }
+
+    .progress-step.canceled .step-number { color: #a31515; }
+
+    .progress-footnote {
+      margin: 12px 0 0;
+      font-weight: 600;
+      color: var(--kg-muted);
+    }
+
+    .summary-card h2 { margin: 0 0 10px; }
+
+    .items-list {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 12px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7fbf8;
+      border: 1px solid #e3efe5;
+    }
+
+    .item-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid rgba(9,164,80,0.12);
+      background: #fff;
+    }
+
+    .item-name { font-weight: 700; margin: 0; }
+    .item-meta { margin: 2px 0 0; color: var(--kg-muted); font-size: 13px; }
+
+    .totals {
+      padding-top: 10px;
+      border-top: 1px dashed var(--kg-border);
+      display: grid;
+      gap: 8px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      color: var(--kg-dark);
+    }
+
+    .total-row.muted { color: var(--kg-muted); font-weight: 600; }
+
+    .status-banner {
+      background: #fff6ed;
+      color: #9a3412;
+      border: 1px solid #f7d1a5;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin: 0 0 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    @media (max-width: 840px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-<body>
-  <div class="card">
-    <h1>Thank you for your order!</h1>
-    <p>We’ve received your order and are preparing it now. Here’s a summary:</p>
-    <div id="orderSummary" class="summary"></div>
-    <a href="index.html" class="home">Return to home</a>
+<body class="thankyou-page">
+  <div class="page">
+    <header class="thankyou-header">
+      <div class="brand">
+        <img src="pictures/kg_Grill_Kitchen_LogoDesign.png" alt="KG Grill Kitchen logo" class="logo" />
+        <div>
+          <p class="eyebrow">Live grill tracker</p>
+          <h1>Thanks for your order!</h1>
+          <p class="subhead" id="heroCopy">We’re lining up your food and feeding you live updates straight from the kitchen.</p>
+        </div>
+      </div>
+      <a href="index.html" class="pill-button">Start a new order</a>
+    </header>
+
+    <div id="orderingClosedBanner" class="status-banner" hidden>
+      <span>⚠️</span>
+      <span id="orderingClosedText">Ordering is paused right now.</span>
+    </div>
+
+    <div class="grid">
+      <section class="card progress-card">
+        <div class="progress-meta">
+          <div class="pill badge-live" id="liveBadge">Live</div>
+          <div class="pill" id="fulfilmentTag">Pickup</div>
+          <div class="pill soft" id="orderPriceTag">Total — $0.00</div>
+        </div>
+
+        <div class="order-hero">
+          <img src="pictures/kg_owner.png" alt="Chef prepping your order" />
+          <div>
+            <strong id="orderHeadline">We’ve locked in your spot.</strong>
+            <span id="orderNumberLabel">Order is syncing with our line board.</span>
+          </div>
+        </div>
+
+        <ol class="progress-steps" id="orderProgressSteps">
+          <li class="progress-step current" data-step="placed">
+            <div class="step-marker"><span class="step-number">1</span><img class="step-image" src="pictures/kg_Grill_Kitchen_LogoDesign.png" alt="" /></div>
+            <div class="step-copy">
+              <p class="step-title">Order placed</p>
+              <p class="step-text" id="stepPlacedText">We’ve reserved your food and shared it with the kitchen.</p>
+              <div class="step-time" id="placedTime"></div>
+            </div>
+          </li>
+          <li class="progress-step" data-step="grill">
+            <div class="step-marker"><span class="step-number">2</span><img class="step-image" src="pictures/beefKabobs.jpeg" alt="" /></div>
+            <div class="step-copy">
+              <p class="step-title">On the grill</p>
+              <p class="step-text">Our crew is seasoning, basting, and plating your picks.</p>
+              <div class="step-time" id="grillTime"></div>
+            </div>
+          </li>
+          <li class="progress-step" data-step="ready">
+            <div class="step-marker"><span class="step-number">3</span><img class="step-image" src="pictures/potatoWedges.jpeg" alt="" /></div>
+            <div class="step-copy">
+              <p class="step-title">Ready for you</p>
+              <p class="step-text">Listen for your name or watch for a delivery hand-off.</p>
+              <div class="step-time" id="readyTime"></div>
+            </div>
+          </li>
+          <li class="progress-step" data-step="done">
+            <div class="step-marker"><span class="step-number">4</span><img class="step-image" src="pictures/salmon.jpeg" alt="" /></div>
+            <div class="step-copy">
+              <p class="step-title" id="finalStepTitle">Picked up</p>
+              <p class="step-text" id="finalStepText">Enjoy! Snap a pic and tag @KGGrillKitchen.</p>
+              <div class="step-time" id="doneTime"></div>
+            </div>
+          </li>
+        </ol>
+
+        <p class="progress-footnote" id="progressFootnote">You’ll see every status flip here the second our line board updates.</p>
+      </section>
+
+      <section class="card summary-card">
+        <h2>Your feast</h2>
+        <ul class="items-list" id="orderItems"></ul>
+        <div class="totals" id="totalsContainer" hidden>
+          <div class="total-row muted"><span>Subtotal</span><span id="subtotalValue">$0.00</span></div>
+          <div class="total-row muted" id="deliveryRow" hidden><span>Delivery fee</span><span id="deliveryValue">$0.00</span></div>
+          <div class="total-row muted" id="feesRow" hidden><span>Service &amp; tax</span><span id="feesValue">$0.00</span></div>
+          <div class="total-row muted" id="tipRow" hidden><span>Tip</span><span id="tipValue">$0.00</span></div>
+          <div class="total-row"><span>Total</span><span id="grandValue">$0.00</span></div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
-    function formatMoney(num) {
-      return '$' + (Number(num) / 100).toFixed(2);
+    const ORDER_TRACKING_STORAGE_KEY = 'kgLastOrderTracking';
+    const ORDER_SUMMARY_STORAGE_KEY = 'kgLastOrderSummary';
+    const ORDERING_STATUS_STORAGE_KEY = 'kgOrderingStatus';
+    const DEFAULT_CLOSED_MESSAGE = 'Sorry, we are currently closed. Please check back when we are open.';
+    const KG_API_BASE = document.querySelector('meta[name="kg-api-base"]')?.content || '';
+
+    const stepOrder = ['placed', 'grill', 'ready', 'done'];
+    let trackingSnapshot = null;
+    let pollTimer = null;
+
+    function formatMoneyCents(cents) {
+      return '$' + (Number(cents || 0) / 100).toFixed(2);
+    }
+
+    function normalizePhone(phone = '') {
+      return String(phone).replace(/\D+/g, '');
+    }
+
+    function loadStoredSnapshot() {
+      try {
+        const raw = localStorage.getItem(ORDER_TRACKING_STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn('Could not read tracking snapshot', e);
+        return null;
+      }
     }
 
     function loadSummary() {
       try {
-        const raw = localStorage.getItem('kgLastOrderSummary');
-        if (!raw) return;
-
-        const order = JSON.parse(raw);
-        const sumDiv = document.getElementById('orderSummary');
-
-        // Render items
-        if (Array.isArray(order.items)) {
-          order.items.forEach(function (item) {
-            const row = document.createElement('div');
-            row.className = 'item';
-            row.innerHTML =
-              '<span>' +
-              item.quantity +
-              '× ' +
-              item.name +
-              '</span><span>' +
-              formatMoney(item.total) +
-              '</span>';
-            sumDiv.appendChild(row);
-          });
-        }
-
-        // Render totals
-        const totals = document.createElement('div');
-        totals.className = 'totals';
-        totals.innerHTML =
-          '<div><span>Subtotal</span><span>' +
-          formatMoney(order.subtotal) +
-          '</span></div>' +
-          '<div><span>Delivery fee</span><span>' +
-          formatMoney(order.deliveryFee) +
-          '</span></div>' +
-          '<div><span>Service &amp; tax</span><span>' +
-          formatMoney(order.feesAndEstimatedTax) +
-          '</span></div>' +
-          '<div><span>Tip</span><span>' +
-          formatMoney(order.tipAmount) +
-          '</span></div>' +
-          '<div class="total"><span>Total Paid</span><span>' +
-          formatMoney(order.grandTotal) +
-          '</span></div>';
-
-        sumDiv.appendChild(totals);
-
-        // Clear summary so it isn't reused inadvertently
-        localStorage.removeItem('kgLastOrderSummary');
+        const raw = localStorage.getItem(ORDER_SUMMARY_STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
       } catch (e) {
-        console.warn('Could not load order summary:', e);
+        console.warn('Could not read summary', e);
+        return null;
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadSummary);
+    function renderItems(summary) {
+      const list = document.getElementById('orderItems');
+      list.innerHTML = '';
+      if (!summary || !Array.isArray(summary.items)) return;
+
+      summary.items.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'item-row';
+        const image = item.image || 'pictures/kg_Grill_Kitchen_LogoDesign.png';
+        li.innerHTML = `
+          <img src="${image}" alt="${item.name}" class="item-thumb" />
+          <div>
+            <p class="item-name">${item.quantity || 1}× ${item.name}</p>
+            <p class="item-meta">Guest favorite #${idx + 1}</p>
+          </div>
+          <strong>${formatMoneyCents(item.total)}</strong>
+        `;
+        list.appendChild(li);
+      });
+
+      document.getElementById('totalsContainer').hidden = false;
+      document.getElementById('subtotalValue').textContent = formatMoneyCents(summary.subtotal);
+      document.getElementById('grandValue').textContent = formatMoneyCents(summary.grandTotal);
+
+      if (summary.deliveryFee > 0) {
+        document.getElementById('deliveryRow').hidden = false;
+        document.getElementById('deliveryValue').textContent = formatMoneyCents(summary.deliveryFee);
+      }
+      if (summary.feesAndEstimatedTax > 0) {
+        document.getElementById('feesRow').hidden = false;
+        document.getElementById('feesValue').textContent = formatMoneyCents(summary.feesAndEstimatedTax);
+      }
+      if (summary.tipAmount > 0) {
+        document.getElementById('tipRow').hidden = false;
+        document.getElementById('tipValue').textContent = formatMoneyCents(summary.tipAmount);
+      }
+    }
+
+    function updateStepVisual(step, statusText) {
+      const steps = Array.from(document.querySelectorAll('.progress-step'));
+      const activeIndex = Math.max(0, stepOrder.indexOf(step));
+      steps.forEach((node, idx) => {
+        node.classList.remove('current', 'completed', 'canceled');
+        if (step === 'canceled') {
+          if (idx === activeIndex) node.classList.add('canceled', 'current');
+          else if (idx < activeIndex) node.classList.add('canceled');
+          return;
+        }
+        if (idx < activeIndex) node.classList.add('completed');
+        if (idx === activeIndex) node.classList.add('current');
+      });
+
+      const headline = document.getElementById('orderHeadline');
+      const footnote = document.getElementById('progressFootnote');
+      if (step === 'ready') {
+        headline.textContent = 'We just called your name.';
+        footnote.textContent = 'Swing by the counter now—your order is hot and waiting.';
+      } else if (step === 'done') {
+        headline.textContent = 'Order closed out.';
+        footnote.textContent = 'If you need anything else, tap back to order again in seconds.';
+      } else if (step === 'grill') {
+        headline.textContent = 'Our chefs are on it.';
+        footnote.textContent = 'Every flip and baste is tracked here so you never wonder what’s next.';
+      } else if (step === 'canceled') {
+        headline.textContent = 'Order canceled';
+        footnote.textContent = statusText || 'We hit a snag. Please see the counter for help.';
+      } else {
+        headline.textContent = 'We’ve locked in your spot.';
+        footnote.textContent = 'You’ll see every status flip here the second our line board updates.';
+      }
+
+      const statusLabel = statusText || '';
+      if (statusLabel) {
+        document.getElementById('orderNumberLabel').textContent = statusLabel;
+      }
+    }
+
+    function applyTimestamps(order) {
+      const placed = order?.createdAt ? new Date(order.createdAt) : new Date(trackingSnapshot?.createdAt || Date.now());
+      const ready = order?.readyAt ? new Date(order.readyAt) : null;
+      const completed = order?.completedAt ? new Date(order.completedAt) : null;
+      const formatter = new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit' });
+
+      document.getElementById('placedTime').textContent = placed ? `Placed ${formatter.format(placed)}` : '';
+      document.getElementById('grillTime').textContent = ready ? 'Finished grilling' : '';
+      document.getElementById('readyTime').textContent = ready ? `Ready at ${formatter.format(ready)}` : '';
+      document.getElementById('doneTime').textContent = completed ? `Completed at ${formatter.format(completed)}` : '';
+    }
+
+    function statusToStep(status) {
+      if (!status) return 'placed';
+      const normalized = status.toLowerCase();
+      if (normalized === 'canceled') return 'canceled';
+      if (normalized === 'ready') return 'ready';
+      if (normalized === 'completed') return 'done';
+      if (normalized === 'in_progress') return 'grill';
+      return 'placed';
+    }
+
+    function findMatchingOrder(orders, snapshot) {
+      if (!snapshot) return null;
+      const phone = normalizePhone(snapshot.phone);
+      return orders.find((order) => {
+        const orderPhone = normalizePhone(order.phone || '');
+        const totalsMatch = snapshot.grandTotal
+          ? Math.abs((order.totals?.total ?? order.total ?? 0) - snapshot.grandTotal) <= 100
+          : true;
+        const fulfilmentMatch = snapshot.fulfilment ? order.fulfilment === snapshot.fulfilment : true;
+        const idMatch = snapshot.orderId && order.id === snapshot.orderId;
+        const createdOk = snapshot.createdAt ? Math.abs(new Date(order.createdAt).getTime() - snapshot.createdAt) < 8 * 60 * 60 * 1000 : true;
+
+        if (idMatch) return true;
+        if (phone && phone === orderPhone && totalsMatch && fulfilmentMatch && createdOk) return true;
+        return false;
+      }) || null;
+    }
+
+    async function pollLineBoard() {
+      if (!KG_API_BASE || !trackingSnapshot) return;
+      try {
+        const resp = await fetch(`${KG_API_BASE}/line-orders?includeHistory=1`, { cache: 'no-store' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const orders = data.orders || [];
+        const match = findMatchingOrder(orders, trackingSnapshot);
+        if (match) {
+          const step = statusToStep(match.status);
+          const badgeText = match.status === 'ready'
+            ? 'Ready for pickup'
+            : match.status === 'completed'
+              ? 'Closed out'
+              : match.status === 'in_progress'
+                ? 'Cooking now'
+                : match.status === 'canceled'
+                  ? 'Canceled'
+                  : 'Order received';
+          document.getElementById('orderNumberLabel').textContent = match.id ? `Ticket #${match.id}` : badgeText;
+          updateStepVisual(step, badgeText);
+          applyTimestamps(match);
+        }
+      } catch (err) {
+        console.warn('Could not poll line board', err);
+      }
+    }
+
+    async function fetchOrderingStatus() {
+      try {
+        const resp = await fetch(`${KG_API_BASE}/store-status`, { cache: 'no-store' });
+        if (!resp.ok) return null;
+        return await resp.json();
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function applyOrderingBanner(statusObj) {
+      const banner = document.getElementById('orderingClosedBanner');
+      const text = document.getElementById('orderingClosedText');
+      if (!statusObj || !statusObj.closed) {
+        banner.hidden = true;
+        return;
+      }
+      banner.hidden = false;
+      text.textContent = statusObj.message || DEFAULT_CLOSED_MESSAGE;
+    }
+
+    function initThankYou() {
+      trackingSnapshot = loadStoredSnapshot();
+      const summary = loadSummary();
+
+      if (trackingSnapshot) {
+        document.getElementById('fulfilmentTag').textContent =
+          trackingSnapshot.fulfilment === 'delivery'
+            ? 'Delivery'
+            : trackingSnapshot.fulfilment === 'inline'
+              ? 'In-line / In-store'
+              : 'Pickup';
+        document.getElementById('orderPriceTag').textContent = `Total — ${formatMoneyCents(trackingSnapshot.grandTotal)}`;
+        document.getElementById('heroCopy').textContent =
+          trackingSnapshot.fulfilment === 'delivery'
+            ? 'We’re pacing your delivery and will update you each time the kitchen advances your order.'
+            : 'Your spot is locked in—watch the live grill tracker to see when it hits the counter.';
+        applyTimestamps(trackingSnapshot);
+      }
+
+      if (summary) {
+        renderItems(summary);
+      }
+
+      if (KG_API_BASE) {
+        fetchOrderingStatus().then((status) => applyOrderingBanner(status));
+        pollLineBoard();
+        pollTimer = setInterval(pollLineBoard, 4000);
+      }
+
+      window.addEventListener('storage', (event) => {
+        if (event.key === ORDERING_STATUS_STORAGE_KEY) {
+          try {
+            const parsed = JSON.parse(event.newValue);
+            applyOrderingBanner(parsed);
+          } catch (_) {
+            applyOrderingBanner(null);
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initThankYou);
   </script>
 </body>
 </html>
