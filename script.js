@@ -497,6 +497,70 @@ function computeTotals() {
   return { subtotal, fees, deliveryFee: delivery, tip, grand: total };
 }
 
+/* --------------------------------------------------------------------------
+ * Order snapshot + tracking helpers
+ * -------------------------------------------------------------------------- */
+
+const ORDER_SUMMARY_STORAGE_KEY = 'kgLastOrderSummary';
+const ORDER_TRACKING_STORAGE_KEY = 'kgLastOrderTracking';
+
+function normalizePhoneNumber(phone = '') {
+  return String(phone).replace(/\D+/g, '');
+}
+
+function buildOrderSnapshot(totals, meta = {}) {
+  return {
+    createdAt: meta.createdAt || Date.now(),
+    fulfilment: meta.fulfilment || 'pickup',
+    name: meta.name || '',
+    phone: normalizePhoneNumber(meta.phone || ''),
+    addressLine1: meta.addressLine1 || '',
+    notes: meta.notes || '',
+    orderId: meta.orderId || '',
+    items: cart.map((i) => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      unitPriceCents: Math.round(i.price * 100),
+      lineTotalCents: Math.round(i.price * 100 * i.quantity),
+      sauce: i.sauce || null,
+      freeSide: i.freeSide || null,
+      image: i.image || i.img || i.photo || '',
+    })),
+    subtotal: Math.round((totals?.subtotal || 0) * 100),
+    deliveryFee: Math.round((totals?.deliveryFee || 0) * 100),
+    feesAndEstimatedTax: Math.round((totals?.fees || 0) * 100),
+    tipAmount: Math.round((totals?.tip || 0) * 100),
+    grandTotal: Math.round((totals?.grand || 0) * 100),
+  };
+}
+
+function persistOrderSnapshot(totals, meta = {}) {
+  const snapshot = buildOrderSnapshot(totals, meta);
+
+  const summary = {
+    items: snapshot.items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      total: item.lineTotalCents,
+      image: item.image,
+    })),
+    subtotal: snapshot.subtotal,
+    deliveryFee: snapshot.deliveryFee,
+    feesAndEstimatedTax: snapshot.feesAndEstimatedTax,
+    tipAmount: snapshot.tipAmount,
+    grandTotal: snapshot.grandTotal,
+  };
+
+  try {
+    localStorage.setItem(ORDER_SUMMARY_STORAGE_KEY, JSON.stringify(summary));
+    localStorage.setItem(ORDER_TRACKING_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch (err) {
+    console.warn('Could not persist order snapshot', err);
+  }
+
+  return snapshot;
+}
 
 /* --------------------------------------------------------------------------
  * API base helper
@@ -1714,6 +1778,15 @@ async function submitInlineOrder() {
       return false;
     }
 
+        persistOrderSnapshot(totals, {
+      fulfilment: 'inline',
+      name,
+      phone,
+      notes,
+      orderId: data.order?.id || data.id || '',
+      createdAt: data.order?.createdAt ? Date.parse(data.order.createdAt) : Date.now(),
+    });
+
     alert(`Thank you, ${name}! Your order has been sent to the kitchen.\nPlease pay at the cashier when your name is called.`);
 
     // Reset cart + UI
@@ -1723,6 +1796,8 @@ async function submitInlineOrder() {
     updateCartButton();
     updateCartTotals();
     closeCart(true);
+
+    window.location.href = 'thank-you.html';
 
     return true;
   } catch (err) {
@@ -1746,6 +1821,7 @@ async function createPaymentIntent() {
   const name = (document.getElementById('customerName')?.value || '').trim();
   const phone = (document.getElementById('customerPhone')?.value || '').trim();
   const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
+  const notes = (document.getElementById('orderNotes')?.value || '').trim();
 
   // Build totals once (grand must be >= $0.50 => 50 cents)
   const totals = computeTotals();
@@ -1820,6 +1896,7 @@ async function handleOrderSuccess(paymentIntentId) {
   const name = (document.getElementById('customerName')?.value || '').trim();
   const phone = (document.getElementById('customerPhone')?.value || '').trim();
   const line1 = (document.getElementById('deliveryAddress')?.value || '').trim();
+  const notes = (document.getElementById('orderNotes')?.value || '').trim();
 
   const totals = computeTotals();
   // totals: { subtotal, fees, deliveryFee, tip, grand }
@@ -1875,6 +1952,15 @@ async function handleOrderSuccess(paymentIntentId) {
     });
   } catch (_) {}
 
+    persistOrderSnapshot(totals, {
+    fulfilment,
+    name,
+    phone,
+    addressLine1: line1,
+    notes,
+    orderId: paymentIntentId,
+  });
+
   // Friendly confirmation
   alert(`Thank you, ${name}! Your order has been placed successfully.`);
 
@@ -1895,6 +1981,8 @@ async function handleOrderSuccess(paymentIntentId) {
 
   // NEW: make sure mobile checkout visuals are reset
   resetMobileCheckoutHeader();
+  
+  window.location.href = 'thank-you.html';
 }
 
 
@@ -1929,10 +2017,12 @@ async function startStripeCheckout() {
   const nameInput = document.getElementById('customerName');
   const phoneInput = document.getElementById('customerPhone');
   const addressInput = document.getElementById('deliveryAddress');
+  const notesInput = document.getElementById('orderNotes');
 
   const name = (nameInput?.value || '').trim();
   const phone = (phoneInput?.value || '').trim();
   const addressLine1 = (addressInput?.value || '').trim();
+  const notes = (notesInput?.value || '').trim();
 
   if (!name || !phone || (fulfilment === 'delivery' && !addressLine1)) {
     let msg = 'Please enter your name and phone number';
@@ -2021,6 +2111,15 @@ const payload = {
       if (!resp.ok || !data.url) {
         throw new Error(data.error || 'Failed to start checkout');
       }
+
+      persistOrderSnapshot(totals, {
+        fulfilment,
+        name,
+        phone,
+        addressLine1,
+        notes,
+        orderId: data.orderId || data.id || '',
+      });
 
       // Redirect to Stripe Checkout (this page has Apple Pay button)
       window.location.href = data.url;
